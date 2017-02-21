@@ -3,17 +3,20 @@
 //////////////////////
 // WiFi Definitions //
 //////////////////////
-const char WiFiAPPSK[] = "sparkfun";
+const char WiFiAPPSK[] = "spotlab";
+
+/*
 
 /////////////////////
 // Pin Definitions //
 /////////////////////
-const int LED_PIN = 5; // Thing's onboard, green LED
+const int LED_PIN = 6; // Thing's onboard, green LED
 const int ANALOG_PIN = A0; // The only analog pin on the Thing
 const int DIGITAL_PIN = 12; // Digital pin to be read
 
 WiFiServer server(80);
 
+*/
 
 void setupWiFi()
 {
@@ -26,7 +29,7 @@ void setupWiFi()
   String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
                  String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
   macID.toUpperCase();
-  String AP_NameString = "ESP8266 Thing " + macID;
+  String AP_NameString = "MicroSpot " + macID;
 
   char AP_NameChar[AP_NameString.length() + 1];
   memset(AP_NameChar, AP_NameString.length() + 1, 0);
@@ -37,26 +40,26 @@ void setupWiFi()
   WiFi.softAP(AP_NameChar, WiFiAPPSK);
 }
 
-void initHardware()
+void initSerial()
 {
   Serial.begin(115200);
-  pinMode(DIGITAL_PIN, INPUT_PULLUP);
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
-  // Don't need to set ANALOG_PIN as input,
-  // that's all it can be.
+  delay(5);
+  Serial.print("$h\r\n");
+  delay(10);
+  Serial.print("$h\r\n");
 }
 
 
 void setup()
 {
-  initHardware();
+  initSerial();
   setupWiFi();
-  server.begin();
 }
 
 void loop()
 {
+
+  /*
   // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
@@ -116,4 +119,6 @@ void loop()
 
   // The client will actually be disconnected
   // when the function returns and 'client' object is detroyed
+*/
+
 }
