@@ -1,15 +1,14 @@
 #include <ESP8266WiFi.h>
-#include "Arduino.h"
 
 void setup()
 {
-  Serial.begin(9600);
-  Serial.println();
-  Serial.println("Initializing...");
-  Serial.println();
+  pinMode(14,OUTPUT);
+  digitalWrite(14,LOW);
 }
 
 void loop(){
   delay(1000);
-  Serial.println("Test");
+  digitalWrite(14,HIGH);
+  delay(1000);
+  digitalWrite(14,LOW);
 }
