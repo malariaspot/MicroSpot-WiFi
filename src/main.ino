@@ -1,4 +1,4 @@
-#include <ESP8266WiFi.h>
+#define SECONDS 300
 
 void setup()
 {
@@ -7,8 +7,8 @@ void setup()
 }
 
 void loop(){
-  delay(1000);
+  delay(SECONDS);
   digitalWrite(14,HIGH);
-  delay(1000);
+  delay(SECONDS);
   digitalWrite(14,LOW);
 }
