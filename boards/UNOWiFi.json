@@ -1,11 +1,11 @@
 {
   "build": {
     "core": "esp8266",
-    "extra_flags": "-DLWIP_OPEN_SRC   -DARDUINO=10605 -DARDUINO_ESP8266_NODEMCU -DARDUINO_ARCH_esp8266 -DARDUINO_BOARD=\"ESP8266_NODEMCU\"  -DESP8266",
+    "extra_flags": "-DLWIP_OPEN_SRC   -DARDUINO=10605  -DARDUINO_ARCH_esp8266  -DESP8266",
     "f_cpu": "80000000L",
-    "f_flash": "40000000L",
+    "f_flash": "80000000L",
     "flash_mode": "qio",
-    "ldscript": "esp8266.flash.4m1m.ld",
+    "ldscript": "esp8266.flash.4m.ld",
     "mcu": "esp8266",
     "variant": "nodemcu"
   },
