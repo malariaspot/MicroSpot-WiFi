@@ -19,7 +19,7 @@
 #include <FS.h>
 #include <ArduinoOTA.h>
 #include <Ticker.h>
-
+#include "Mechanical.h"
 
 ///////////////////////////////////////////////
 // GPIO definitions
@@ -55,48 +55,8 @@ void ledFlick(){
   digitalWrite(LEDPIN,!digitalRead(LEDPIN));
 }
 
-///////////////////////////////////////////////
-// Motion control calls with GRBL GCODE
-//
-///////////////////////////////////////////////
 
-//Home the axis
-void homeAxis(){
-  Serial.println("$h");
-}
-
-//Uninterruptible move
-//without speed
-void moveAxis(float X,float Y){
-  Serial.println("G0 X" + (String) X + " Y" + (String) Y);
-}
-
-//with speed
-void moveAxis(float X,float Y,float F){
-  Serial.println("G0 X" + (String) X + " Y" + (String) Y + " F" + (String) F);
-}
-
-//Interruptible move (jog)
-void jogAxis(float X,float Y){
-  Serial.println("G0 X" + (String) X + " Y" + (String) Y);
-}
-
-//with speed
-void jogAxis(float X,float Y,float F){
-  Serial.println("$J=X" + (String) X + " Y" + (String) Y + " F" + (String) F);
-}
-
-//Report position
-void reportPos(){
-  //TODO
-}
-
-//Report config
-void reportConfig(){
-  Serial.println("$$");
-  //TODO
-}
-
+Mechanical stage(115200);
 
 /**
  * @brief Read WiFi connection information from file system.
@@ -193,8 +153,6 @@ void setup()
   digitalWrite(LEDPIN,LOW);
   pinMode(SERIALEN,OUTPUT);
   digitalWrite(SERIALEN,LOW);
-
-  Serial.begin(115200);
 
   delay(100);
 
