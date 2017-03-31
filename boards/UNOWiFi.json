@@ -17,7 +17,7 @@
     "maximum_ram_size": 81920,
     "maximum_size": 1044464,
     "require_upload_port": true,
-    "resetmethod": "nodemcu",
+    "resetmethod" : "nodemcu",
     "speed": 9600
   },
   "url": "http://www.arduino.org/products/boards/arduino-uno-wifi",

@@ -1,15 +1,15 @@
 /**
  * @file OTA-mDNS-SPIFFS.ino
- * 
+ *
  * @author Pascal Gollor (http://www.pgollor.de/cms/)
  * @date 2015-09-18
- * 
+ *
  * changelog:
- * 2015-10-22: 
+ * 2015-10-22:
  * - Use new ArduinoOTA library.
  * - loadConfig function can handle different line endings
  * - remove mDNS studd. ArduinoOTA handle it.
- * 
+ *
  */
 
 // includes
@@ -18,32 +18,92 @@
 #include <WiFiUdp.h>
 #include <FS.h>
 #include <ArduinoOTA.h>
+#include <Ticker.h>
+
+
+///////////////////////////////////////////////
+// GPIO definitions
+//
+///////////////////////////////////////////////
+#define LEDPIN 14 //GPIO for the LED
+#define SERIALEN 4 //GPIO to activate Arduino-esp8266 serial bridge (LOW == ON)
 
 
 /**
  * @brief mDNS and OTA Constants
  * @{
  */
-#define HOSTNAME "ESP8266-OTA-" ///< Hostename. The setup function adds the Chip ID at the end.
+#define HOSTNAME "MicroSpot-" ///< Hostename. The setup function adds the Chip ID at the end.
+//Also used for AP name.
 /// @}
 
 /**
  * @brief Default WiFi connection information.
  * @{
  */
-const char* ap_default_ssid = "esp8266"; ///< Default SSID.
-const char* ap_default_psk = "esp8266esp8266"; ///< Default PSK.
+const char* ap_default_psk = "microspot"; ///< Default PSK.
 /// @}
 
-/// Uncomment the next line for verbose output over UART.
-//#define SERIAL_VERBOSE
+///////////////////////////////////////////////
+// LED ticker and functions to make a Blink
+//
+///////////////////////////////////////////////
+
+Ticker ledBlink;
+
+void ledFlick(){
+  digitalWrite(LEDPIN,!digitalRead(LEDPIN));
+}
+
+///////////////////////////////////////////////
+// Motion control calls with GRBL GCODE
+//
+///////////////////////////////////////////////
+
+//Home the axis
+void homeAxis(){
+  Serial.println("$h");
+}
+
+//Uninterruptible move
+//without speed
+void moveAxis(float X,float Y){
+  Serial.println("G0 X" + (String) X + " Y" + (String) Y);
+}
+
+//with speed
+void moveAxis(float X,float Y,float F){
+  Serial.println("G0 X" + (String) X + " Y" + (String) Y + " F" + (String) F);
+}
+
+//Interruptible move (jog)
+void jogAxis(float X,float Y){
+  Serial.println("G0 X" + (String) X + " Y" + (String) Y);
+}
+
+//with speed
+void jogAxis(float X,float Y,float F){
+  Serial.println("$J=X" + (String) X + " Y" + (String) Y + " F" + (String) F);
+}
+
+//Report position
+void reportPos(){
+  //TODO
+}
+
+//Report config
+void reportConfig(){
+  Serial.println("$$");
+  //TODO
+}
+
 
 /**
  * @brief Read WiFi connection information from file system.
  * @param ssid String pointer for storing SSID.
  * @param pass String pointer for storing PSK.
  * @return True or False.
- * 
+ *
  * The config file have to containt the WiFi SSID in the first line
  * and the WiFi PSK in the second line.
  * Line seperator can be \r\n (CR LF) \r or \n.
@@ -54,15 +114,15 @@ bool loadConfig(String *ssid, String *pass)
   File configFile = SPIFFS.open("/cl_conf.txt", "r");
   if (!configFile)
   {
-    Serial.println("Failed to open cl_conf.txt.");
-
+    //Replace for an html message.
+    ////Serial.println("Failed to open cl_conf.txt.");
     return false;
   }
 
   // Read content from config file.
   String content = configFile.readString();
   configFile.close();
-  
+
   content.trim();
 
   // Check if ther is a second line available.
@@ -82,9 +142,8 @@ bool loadConfig(String *ssid, String *pass)
   // If there is no second line: Some information is missing.
   if (pos == -1)
   {
-    Serial.println("Infvalid content.");
-    Serial.println(content);
-
+    //Serial.println("Invalid content.");
+    //Serial.println(content);
     return false;
   }
 
@@ -95,16 +154,8 @@ bool loadConfig(String *ssid, String *pass)
   ssid->trim();
   pass->trim();
 
-#ifdef SERIAL_VERBOSE
-  Serial.println("----- file content -----");
-  Serial.println(content);
-  Serial.println("----- file content -----");
-  Serial.println("ssid: " + *ssid);
-  Serial.println("psk:  " + *pass);
-#endif
-
   return true;
-} // loadConfig
+}
 
 
 /**
@@ -119,19 +170,15 @@ bool saveConfig(String *ssid, String *pass)
   File configFile = SPIFFS.open("/cl_conf.txt", "w");
   if (!configFile)
   {
-    Serial.println("Failed to open cl_conf.txt for writing");
-
+    //Serial.println("Failed to open cl_conf.txt for writing");
     return false;
   }
-
   // Save SSID and PSK.
   configFile.println(*ssid);
   configFile.println(*pass);
-
   configFile.close();
-  
   return true;
-} // saveConfig
+}
 
 
 /**
@@ -142,28 +189,32 @@ void setup()
   String station_ssid = "";
   String station_psk = "";
 
+  pinMode(LEDPIN,OUTPUT);
+  digitalWrite(LEDPIN,LOW);
+  pinMode(SERIALEN,OUTPUT);
+  digitalWrite(SERIALEN,LOW);
+
   Serial.begin(115200);
-  
+
   delay(100);
 
-  Serial.println("\r\n");
-  Serial.print("Chip ID: 0x");
-  Serial.println(ESP.getChipId(), HEX);
 
   // Set Hostname.
   String hostname(HOSTNAME);
   hostname += String(ESP.getChipId(), HEX);
+
+  String APname(HOSTNAME);
+  APname += String(ESP.getChipId(),HEX);
   WiFi.hostname(hostname);
 
-  // Print hostname.
-  Serial.println("Hostname: " + hostname);
-  //Serial.println(WiFi.hostname());
+
 
 
   // Initialize file system.
   if (!SPIFFS.begin())
   {
-    Serial.println("Failed to mount file system");
+    //html message
+    //Serial.println("Failed to mount file system");
     return;
   }
 
@@ -172,8 +223,7 @@ void setup()
   {
     station_ssid = "";
     station_psk = "";
-
-    Serial.println("No WiFi connection information available.");
+    //Serial.println("No WiFi connection information available.");
   }
 
   // Check WiFi connection
@@ -187,17 +237,9 @@ void setup()
   // ... Compare file config with sdk config.
   if (WiFi.SSID() != station_ssid || WiFi.psk() != station_psk)
   {
-    Serial.println("WiFi config changed.");
 
-    // ... Try to connect to WiFi station.
     WiFi.begin(station_ssid.c_str(), station_psk.c_str());
 
-    // ... Pritn new SSID
-    Serial.print("new SSID: ");
-    Serial.println(WiFi.SSID());
-
-    // ... Uncomment this for debugging output.
-    //WiFi.printDiag(Serial);
   }
   else
   {
@@ -205,39 +247,41 @@ void setup()
     WiFi.begin();
   }
 
-  Serial.println("Wait for WiFi connection.");
+  //Serial.println("Wait for WiFi connection.");
 
   // ... Give ESP 10 seconds to connect to station.
   unsigned long startTime = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000)
   {
-    Serial.write('.');
-    //Serial.print(WiFi.status());
+    //Serial.write('.');
+    ////Serial.print(WiFi.status());
     delay(500);
   }
-  Serial.println();
+  //Serial.println();
 
   // Check connection
   if(WiFi.status() == WL_CONNECTED)
   {
     // ... print IP Address
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
+    //Serial.print("IP address: ");
+    //Serial.println(WiFi.localIP());
   }
   else
   {
-    Serial.println("Can not connect to WiFi station. Go into AP mode.");
-    
+    //Serial.println("Can not connect to WiFi station. Go into AP mode.");
+
     // Go into software AP mode.
     WiFi.mode(WIFI_AP);
 
     delay(10);
 
-    WiFi.softAP(ap_default_ssid, ap_default_psk);
+    WiFi.softAP((const char *)APname.c_str(), ap_default_psk);
 
-    Serial.print("IP address: ");
-    Serial.println(WiFi.softAPIP());
+    //Serial.print("IP address: ");
+    //Serial.println(WiFi.softAPIP());
   }
+
+  ledBlink.attach(1,ledFlick);
 
   // Start OTA server.
   ArduinoOTA.setHostname((const char *)hostname.c_str());
@@ -253,5 +297,6 @@ void loop()
   // Handle OTA server.
   ArduinoOTA.handle();
   yield();
-}
 
+
+}
