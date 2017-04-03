@@ -1,12 +1,20 @@
+#include "Arduino.h"
 
 struct Position{
   float x;
   float y;
 };
 
+struct Line{
+  Line *prev;
+  String content;
+  Line *next;
+};
+
 enum Status{
   OFF,
   OFFLINE,
+  ERROR,
   LOCK,
   MOVING,
   OUTDATED,
@@ -16,29 +24,32 @@ enum Status{
 class Mechanical
 {
 
+  private:
+    int baudios;
+    double timeStamp;
+    Status st = OFF;
+    Position pos;
+
+    bool updatePos();
+    bool checkSanity(Line *message);
+    bool receiveLines(Line *message);
+
   public:
     Mechanical(int baud);
 
     //Serial activation and release
-    bool release();
-    bool restart();
+    bool toggle(bool state);
 
     //Movement
     bool homeAxis();
-    bool moveAxis(float X,float Y);
     bool moveAxis(float X,float Y,float F);
-    bool jogAxis(float X,float Y);
     bool jogAxis(float X,float Y,float F);
     bool stopJog();
 
     //Status reporting
-    bool updatePos();
-    void reportPos();
-    void reportConfig();
+    void getPos();
+    void getConfig();
+    int getStatus();
 
-  private:
-    int baudios;
-    double timeStamp;
-    Status status;
-    Position pos;
+
 };
