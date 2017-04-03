@@ -1,10 +1,16 @@
 
-struct MechStatus{
+struct Position{
   float x;
   float y;
-  bool updated = false;
-  bool locked = true;
-  bool released;
+};
+
+enum Status{
+  OFF,
+  OFFLINE,
+  LOCK,
+  MOVING,
+  OUTDATED,
+  IDLE
 };
 
 class Mechanical
@@ -26,12 +32,13 @@ class Mechanical
     bool stopJog();
 
     //Status reporting
-    void updatePos();
+    bool updatePos();
     void reportPos();
     void reportConfig();
 
   private:
     int baudios;
     double timeStamp;
-    MechStatus status;
+    Status status;
+    Position pos;
 };
