@@ -26,9 +26,9 @@ Mechanical::Mechanical(int baud)
 }
 
 bool
-Mechanical::toggle(bool st)
+Mechanical::toggle(bool button)
 {
-  if(st)
+  if(button)
   {
     digitalWrite(ENABLEPIN,LOW);
     delay(TICK); //delay cautelar time before starting the communication.
@@ -69,13 +69,15 @@ Mechanical::homeAxis()
     if(this->checkSanity(message))
     {
       st = IDLE;
+      pos.x = 0;
+      pos.y = 0;
+      this->eraseBuffer(message);
       return true;
     }
     else
     {
       return false;
     }
-
   }
   else
   {
@@ -87,7 +89,27 @@ Mechanical::homeAxis()
 bool
 Mechanical::moveAxis(float X,float Y,float F)
 {
-
+  if(st > LOCK)
+  {
+    Serial.println("G1 X" + String(X , 3) + " Y" + String(Y , 3) + " F" + String(F , 3));
+    Line * message;
+    if(this->checkSanity(message))
+    {
+      st = IDLE;
+      pos.x = X;
+      pos.y = Y;
+      return true;
+    }
+    else
+    {
+      st = ERROR;
+      return false;
+    }
+  }
+  else
+  {
+    return false;
+  }
 }
 
 //Interruptible movement
@@ -143,7 +165,7 @@ Mechanical::checkSanity(Line *message)
   while(p->next != NULL) p = p->next; //navigate to last line
   if(p->content.equals("ok") && p->prev->content.equals("ok")) //if the two last lines are "ok"
   {
-    p->prev->prev->next = NULL; //Is this necessary?
+    p->prev->prev->next = NULL; //Is this necessary? -> YES
     delete(p->prev);
     delete(p);
     return true;
@@ -151,12 +173,7 @@ Mechanical::checkSanity(Line *message)
   else
   {
     //Deletes whole buffer
-    while(p->prev != NULL)
-    {
-      p = p->prev;
-      delete(p->prev);
-    }
-    delete(p);
+    eraseBuffer(message);
     return false;
   }
 }
@@ -199,4 +216,20 @@ bool Mechanical::updatePos(){
   }else{
     return true;
   }
+}
+
+void
+Mechanical::eraseBuffer(Line * buf)
+{
+  Line *p = buf;
+   //navigate to last line
+  while(p->next != NULL) p = p->next;
+
+  //Deletes whole buffer
+  while(p->prev != NULL)
+  {
+    p = p->prev;
+    delete(p->prev);
+  }
+  delete(buf);
 }

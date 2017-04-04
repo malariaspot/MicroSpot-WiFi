@@ -33,6 +33,7 @@ class Mechanical
     bool updatePos();
     bool checkSanity(Line *message);
     bool receiveLines(Line *message);
+    void eraseBuffer(Line * buf);
 
   public:
     Mechanical(int baud);
