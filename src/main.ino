@@ -37,6 +37,9 @@
 //Also used for AP name.
 /// @}
 
+
+WiFiServer server(80);
+
 /**
  * @brief Default WiFi connection information.
  * @{
@@ -56,7 +59,6 @@ void ledFlick(){
 }
 
 
-Mechanical stage(115200);
 
 /**
  * @brief Read WiFi connection information from file system.
@@ -244,6 +246,7 @@ void setup()
   // Start OTA server.
   ArduinoOTA.setHostname((const char *)hostname.c_str());
   ArduinoOTA.begin();
+  server.begin();
 }
 
 
@@ -288,7 +291,7 @@ void serverLoop() {
   // Match the request
   String val;
   if (req.indexOf("/ayy/lmao") != -1) val = req;
-  else { 
+  else {
     client.stop();
     return;
   }
