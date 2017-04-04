@@ -25,6 +25,7 @@ Mechanical::Mechanical(int baud)
   this->st = OFF;
 }
 
+//Activate and deactivate serial connection.
 bool
 Mechanical::toggle(bool button)
 {
@@ -37,7 +38,7 @@ Mechanical::toggle(bool button)
     while(!Serial){
       if(millis()-timeStamp > TIMEOUT) {
         Serial.end();
-        st = OFF;
+        st = OFFLINE;
         return false;
       }
     }
@@ -62,74 +63,48 @@ Mechanical::toggle(bool button)
 bool
 Mechanical::homeAxis()
 {
-  if(st >= LOCK)
-  {
-    Serial.println("$h");
-    Line * message;
-    this->receiveLines(message);
-    if(this->checkSanity(message))
-    {
-      st = IDLE;
-      pos.x = 0;
-      pos.y = 0;
-      this->eraseBuffer(message);
-      return true;
-    }
-    else
-    {
-      st = ERROR;
-      return false;
-    }
+  bool result;
+  result = sendCommand("$h",LOCK,IDLE,ERROR);
+  if(result){
+    pos.x = 0;
+    pos.y = 0;
+    return true;
   }
-  else
-  {
+  else{
     return false;
   }
 }
 
 //Uninterruptible movement
 bool
-Mechanical::moveAxis(float X,float Y,float F)
+Mechanical::moveAxis(float X, float Y, float F)
 {
-  if(st > LOCK)
-  {
-    Serial.println("G1 X" + String(X , 3) + " Y" + String(Y , 3) + " F" + String(F , 3));
-    Line * message;
-    this->receiveLines(message);
-    if(this->checkSanity(message))
-    {
-      st = IDLE;
-      pos.x = X;
-      pos.y = Y;
-      return true;
-    }
-    else
-    {
-      st = ERROR;
-      return false;
-    }
+  bool result;
+  result = sendCommand("G1 X" + String(X, 3) + " Y" + String(Y, 3) + " F" + String(F, 3),
+    MOVING,IDLE,ERROR);
+  if(result){
+    pos.x = X;
+    pos.y = Y;
+    return true;
   }
-  else
-  {
+  else{
     return false;
   }
 }
 
 //Interruptible movement
-//with speed
 bool
 Mechanical::jogAxis(float X,float Y,float F)
 {
-  //TODO
-  return false;
+  return sendCommand("$J=G1 X" + String(X , 3) + " Y" + String(Y , 3) + " F" + String(F , 3),
+    MOVING,OUTDATED,ERROR);
 }
 
 //stop jogging movement.
 bool
 Mechanical::stopJog()
 {
-  //TODO
-  return false;
+  return sendCommand("\x85",MOVING,OUTDATED,ERROR);
 }
 
 ////////////////////
@@ -138,20 +113,32 @@ Mechanical::stopJog()
 ////////////////////
 
 //Report position
-void
-Mechanical::getPos()
+bool
+Mechanical::getPos(Position p)
 {
-  //TODO
+  if(st == IDLE)
+  {
+    p = pos;
+    return true;
+  }else{
+    if (updatePos()){
+      p = pos;
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
 }
 
 //Report config
-void
-Mechanical::getConfig()
+bool
+Mechanical::getConfig(Line * config)
 {
-  Serial.println("$$");
-  //TODO
+  return sendCommand("$$", ERROR, this->st, this->st, config);
 }
 
+//Returns the number of the current status
 int
 Mechanical::getStatus()
 {
@@ -191,6 +178,8 @@ Mechanical::checkSanity(Line *message)
   }
 }
 
+//Receive the lines and put them into a concatenated Line
+//list.
 bool
 Mechanical::receiveLines(Line *message)
 {
@@ -211,6 +200,7 @@ Mechanical::receiveLines(Line *message)
   return true;
 }
 
+//Safely free all memory allocated by a list of lines.
 void
 Mechanical::eraseBuffer(Line * buf)
 {
@@ -222,8 +212,9 @@ Mechanical::eraseBuffer(Line * buf)
   while(p->prev != NULL)
   {
     p = p->prev;
-    delete(p->prev);
+    delete(p->next);
   }
+  delete(p);
   delete(buf);
   buf = NULL;
 }
@@ -232,31 +223,61 @@ Mechanical::eraseBuffer(Line * buf)
 // Status management utilities //
 /////////////////////////////////
 
-//Ask GRBL for position
+//Ask GRBL for position, and update our local variables.
+//The machine needs to have it's axis stopped.
 bool Mechanical::updatePos(){
 
-  if(st > LOCK)
+  bool result;
+  Line * response;
+  result = sendCommand("$h",OUTDATED,IDLE,ERROR,response);
+  if(result){
+    int index;
+    if(index = response->content.indexOf("MPos:") < 0){
+      this->eraseBuffer(response);
+      st = ERROR;
+      return false;
+    }else{
+      pos.x = response->content.substring(index + 5, index + 10).toFloat();
+      pos.y = response->content.substring(index + 12, index + 17).toFloat();
+      this->eraseBuffer(response);
+      return true;
+    }
+  }
+  else{
+    return false;
+  }
+}
+
+
+//Safely send a command, under certain conditions, with certain consequences,
+//and expecting or not, a response that will be stored in a Line list.
+bool
+Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure)
+{
+  return this->sendCommand(command,atLeast,success,failure,NULL);
+}
+
+bool
+Mechanical::sendCommand(String command, Status atLeast,
+  Status success, Status failure, Line * response)
+{
+  if(st >= atLeast)
   {
-    Serial.println("?");
+    Serial.println(command);
     Line * message;
     this->receiveLines(message);
     if(this->checkSanity(message))
     {
-      int index;
-      if(index = message->content.indexOf("MPos:") < 0){
+      st = success;
+      if(response)
+        response = message;
+      else
         this->eraseBuffer(message);
-        return false;
-      }else{
-        pos.x = message->content.substring(index + 5, index + 10).toFloat();
-        pos.y = message->content.substring(index + 12, index + 17).toFloat();
-        this->eraseBuffer(message);
-        return true;
-      }
+      return true;
     }
     else
     {
-      st = ERROR;
-      this->eraseBuffer(message);
+      st = failure;
       return false;
     }
   }
@@ -264,5 +285,4 @@ bool Mechanical::updatePos(){
   {
     return false;
   }
-
 }

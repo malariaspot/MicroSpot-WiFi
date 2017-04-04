@@ -12,13 +12,13 @@ struct Line{
 };
 
 enum Status{
-  OFF,
-  OFFLINE,
-  ERROR,
-  LOCK,
-  MOVING,
-  OUTDATED,
-  IDLE
+  OFF, //Enable pin is off.
+  OFFLINE, //Enable pin is on, but serial is not activated.
+  ERROR, //Connection has ben stablished, but GRBL is in an ERROR state
+  LOCK, //GRBL is in an ALARM/LOCK state, such as limit hit or not homed.
+  MOVING, //The motors are expected to be moving.
+  OUTDATED, //The motors may be stopped, but the position reported may not be correct.
+  IDLE //GRBL is sitting idle, and the position has been reported by the machine.
 };
 
 class Mechanical
@@ -30,27 +30,34 @@ class Mechanical
     Status st = OFF;
     Position pos;
 
-    bool updatePos();
-    bool checkSanity(Line *message);
-    bool receiveLines(Line *message);
-    void eraseBuffer(Line * buf);
+    bool updatePos(); //Asks GRBL its position.
+
+    //Safely send a command, and expect a response or not.
+    bool sendCommand(String command, Status atLeast, Status success, Status failure);
+    bool sendCommand(String command, Status atLeast, Status success, Status failure, Line * response);
+    bool receiveLines(Line *message); //Receive lines from GRBL.
+    bool checkSanity(Line *message); //Check if the response from GRBL is ok.
+    //checkSanity deletes the Line list if it yields a FALSE.
+
 
   public:
-    Mechanical(int baud);
+    //Instantiation
+    Mechanical(int baud); //Instantiate the object and choose baudrate.
 
     //Serial activation and release
-    bool toggle(bool state);
+    bool toggle(bool state); //Turn on or off the serial interface
 
     //Movement
-    bool homeAxis();
-    bool moveAxis(float X,float Y,float F);
-    bool jogAxis(float X,float Y,float F);
-    bool stopJog();
+    bool homeAxis(); //Take axis to home position.
+    bool moveAxis(float X,float Y,float F); //Ininterruptible move to (X,Y) at speed F.
+    bool jogAxis(float X,float Y,float F); //Interruptible move to (X,Y) at speed F.
+    bool stopJog();  //Stop an interruptible movement.
 
     //Status reporting
-    void getPos();
-    void getConfig();
-    int getStatus();
+    bool getPos(Position p); //Stores the position in the argument "p".
+    bool getConfig(Line * config); //Stores the config lines into Line list "config".
+    //After using getConfig, the Line should be erased with eraseBuffer.
+    int getStatus(); //Returns a number corresponding the status.
 
-
+    static void eraseBuffer(Line * buf); //deletes whole list of lines.
 };
