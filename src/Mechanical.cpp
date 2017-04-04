@@ -66,6 +66,7 @@ Mechanical::homeAxis()
   {
     Serial.println("$h");
     Line * message;
+    this->receiveLines(message);
     if(this->checkSanity(message))
     {
       st = IDLE;
@@ -76,6 +77,7 @@ Mechanical::homeAxis()
     }
     else
     {
+      st = ERROR;
       return false;
     }
   }
@@ -93,6 +95,7 @@ Mechanical::moveAxis(float X,float Y,float F)
   {
     Serial.println("G1 X" + String(X , 3) + " Y" + String(Y , 3) + " F" + String(F , 3));
     Line * message;
+    this->receiveLines(message);
     if(this->checkSanity(message))
     {
       st = IDLE;
@@ -117,14 +120,16 @@ Mechanical::moveAxis(float X,float Y,float F)
 bool
 Mechanical::jogAxis(float X,float Y,float F)
 {
-
+  //TODO
+  return false;
 }
 
 //stop jogging movement.
 bool
 Mechanical::stopJog()
 {
-
+  //TODO
+  return false;
 }
 
 ////////////////////
@@ -154,8 +159,15 @@ Mechanical::getStatus()
 }
 
 /////////////////////
+//                 //
 // Private methods //
+//                 //
 /////////////////////
+
+
+//////////////////////////////////
+// Serial input check utilities //
+//////////////////////////////////
 
 //After sending a command, check if GRBL understood well.
 bool
@@ -165,6 +177,7 @@ Mechanical::checkSanity(Line *message)
   while(p->next != NULL) p = p->next; //navigate to last line
   if(p->content.equals("ok") && p->prev->content.equals("ok")) //if the two last lines are "ok"
   {
+    //delete the last two "ok" lines.
     p->prev->prev->next = NULL; //Is this necessary? -> YES
     delete(p->prev);
     delete(p);
@@ -198,26 +211,6 @@ Mechanical::receiveLines(Line *message)
   return true;
 }
 
-//Ask GRBL for position
-bool Mechanical::updatePos(){
-  Serial.println("?");
-  timeStamp = millis();
-
-  //yield() needs to be used not to lock the entire processor.
-  while(Serial.available() <= 0){
-    if(millis() - timeStamp > TIMEOUT) return false;
-  }
-
-  String message;
-  int index;
-  message = Serial.readString();
-  if(index = message.indexOf("MPos:") < 0){
-    return false;
-  }else{
-    return true;
-  }
-}
-
 void
 Mechanical::eraseBuffer(Line * buf)
 {
@@ -232,4 +225,44 @@ Mechanical::eraseBuffer(Line * buf)
     delete(p->prev);
   }
   delete(buf);
+  buf = NULL;
+}
+
+/////////////////////////////////
+// Status management utilities //
+/////////////////////////////////
+
+//Ask GRBL for position
+bool Mechanical::updatePos(){
+
+  if(st > LOCK)
+  {
+    Serial.println("?");
+    Line * message;
+    this->receiveLines(message);
+    if(this->checkSanity(message))
+    {
+      int index;
+      if(index = message->content.indexOf("MPos:") < 0){
+        this->eraseBuffer(message);
+        return false;
+      }else{
+        pos.x = message->content.substring(index + 5, index + 10).toFloat();
+        pos.y = message->content.substring(index + 12, index + 17).toFloat();
+        this->eraseBuffer(message);
+        return true;
+      }
+    }
+    else
+    {
+      st = ERROR;
+      this->eraseBuffer(message);
+      return false;
+    }
+  }
+  else
+  {
+    return false;
+  }
+
 }
