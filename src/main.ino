@@ -154,7 +154,7 @@ void setup()
   pinMode(LEDPIN,OUTPUT);
   digitalWrite(LEDPIN,LOW);
   pinMode(SERIALEN,OUTPUT);
-  digitalWrite(SERIALEN,LOW);
+  digitalWrite(SERIALEN,HIGH);
 
   delay(100);
 
