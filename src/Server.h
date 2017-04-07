@@ -5,6 +5,8 @@
 #ifndef _SERVER_H
 #define _SERVER_H
 
+#include "FileManager.h"
+
 class Server {
 public: 
 	Server();
@@ -17,6 +19,8 @@ private:
 	WiFiServer serverWifi(80);
 	const char* ap_default_psk = "microspot"; ///< Default PSK.
 	String prepareHtmlPage(String response);
+    FileManager fileManager();
+
 };
 
 #endif //_SERVER_H

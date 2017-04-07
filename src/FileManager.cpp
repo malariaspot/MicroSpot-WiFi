@@ -5,12 +5,7 @@
 
 FileManager::FileManager()
 {
-  if (!SPIFFS.begin()) { return; }
-  // Load wifi connection information.
-  if (! loadConfig(&station_ssid, &station_psk)) {
-    station_ssid = "";
-    station_psk = "";
-  }
+    if(!SPIFFS.begin()) return NULL;
 }
 
 /**

@@ -1,11 +1,11 @@
-/**
- * Project Untitled
- */
-
 #include "Server.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
+#include "FileManager.h"
+
+#define HOSTNAME "MicroSpot-" //Hostname and AP name.
+
 
 /**
  * Server implementation
@@ -14,10 +14,29 @@
 Server::Server() {}
 
 void Server::setUp(String hostname) {
+
+  // Set Hostname and AP name
+  String hostname(HOSTNAME);
+  hostname += String(ESP.getChipId(), HEX);
+
+  String APname(HOSTNAME);
+  APname += String(ESP.getChipId(),HEX);
+
+  //Set the hostname of the server
  	WiFi.hostname(hostname);
+  
+  //Check of there has been a change in WiFi configuration.
+  //Initialize filesystem.
+  filemanager();
+
+    // Load wifi connection information.
+  if (! fileManager.loadWifiConfig(&station_ssid, &station_psk))
+  {
+    station_ssid = "";
+    station_psk = "";
+  }
 
   // Check WiFi connection
-  // ... check mode
   if (WiFi.getMode() != WIFI_STA) {
     WiFi.mode(WIFI_STA);
     delay(10);
@@ -43,7 +62,7 @@ void Server::setUp(String hostname) {
 
     delay(10);
 
-    WiFi.softAP((const char *)APname.c_str(), ap_default_psk);
+    WiFi.softAP((const char *)APname.c_str(), this->ap_default_psk);
   }
 
   serverWifi.begin();
