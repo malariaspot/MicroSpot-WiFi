@@ -14,15 +14,21 @@
 
 #include <ArduinoOTA.h>
 #include <Ticker.h>
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+
 #include "Mechanical.h"
-#include "Server.h"
+#include "MicroServer.h"
+
+#define HOSTNAME "MicroSpot-" //Hostname and AP name.
+
 
 ///////////////////////////////////////////////
 // Server declaration.
 //
 ///////////////////////////////////////////////
 
-Server server();
+MicroServer microServer();
 
 
 ///////////////////////////////////////////////
@@ -59,7 +65,7 @@ void setup() {
   ArduinoOTA.setHostname((const char *)hostname.c_str());
   ArduinoOTA.begin();
 
-  server.setUp();
+  microServer.setUp(hostname);
 }
 
 /**
@@ -67,7 +73,7 @@ void setup() {
  */
 void loop() {
   //serverLoop();
-  server.run();
+  microServer.run();
   yield();
   // Handle OTA server.
   ArduinoOTA.handle();

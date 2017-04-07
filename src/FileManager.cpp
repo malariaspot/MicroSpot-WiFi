@@ -1,11 +1,11 @@
 #include "FileManager.h"
-#include <Arduino.h>
 
 #include <FS.h>
 
 FileManager::FileManager()
 {
-    if(!SPIFFS.begin()) return NULL;
+    //This should yield a response in case of errors.
+    SPIFFS.begin();
 }
 
 /**

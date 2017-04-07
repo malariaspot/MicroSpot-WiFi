@@ -1,33 +1,30 @@
-#include "Server.h"
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
-#include "FileManager.h"
+#include "MicroServer.h"
 
-#define HOSTNAME "MicroSpot-" //Hostname and AP name.
+
+
 
 
 /**
  * Server implementation
  */
 
-Server::Server() {}
+MicroServer::MicroServer() {
+  this->serverWifi(80);
+  this->fileManager();
+}
 
-void Server::setUp(String hostname) {
+void MicroServer::setUp(String hostname) {
 
-  // Set Hostname and AP name
-  String hostname(HOSTNAME);
+  
   hostname += String(ESP.getChipId(), HEX);
 
-  String APname(HOSTNAME);
-  APname += String(ESP.getChipId(),HEX);
+  String APname = hostname;
 
   //Set the hostname of the server
  	WiFi.hostname(hostname);
   
   //Check of there has been a change in WiFi configuration.
-  //Initialize filesystem.
-  filemanager();
+  String station_ssid, station_psk;
 
     // Load wifi connection information.
   if (! fileManager.loadWifiConfig(&station_ssid, &station_psk))
@@ -68,9 +65,9 @@ void Server::setUp(String hostname) {
   serverWifi.begin();
 }
 
-void Server::run() {
+void MicroServer::run() {
 	// Check if a client has connected
-  WiFiClient client = server.available();
+  client = serverWifi.available();
   if (!client) { return; }
   // Wait until the client sends some data
   while(!client.available()){ delay(1); }
@@ -89,10 +86,19 @@ void Server::run() {
   client.println(prepareHtmlPage(val));
 }
 
-void Server::success() { client.println(prepareHtmlPage("Done")); }
-void Server::error() { client.println(prepareHtmlPage("Error")); }
+void 
+MicroServer::success() 
+{ 
+  client.println(prepareHtmlPage("Done")); 
+}
 
-String Server::prepareHtmlPage(String response) {
+void 
+MicroServer::error() 
+{
+  client.println(prepareHtmlPage("Error")); 
+}
+
+String MicroServer::prepareHtmlPage(String response) {
   String htmlPage = String("HTTP/1.1 200 OK\r\n") +
             "Content-Type: text/html\r\n" +
             "Connection: close\r\n" +  // the connection will be closed after completion of the response

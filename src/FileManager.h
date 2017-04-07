@@ -1,11 +1,10 @@
-#ifndef FILEMANAGER_H
-#define FILEMANAGER_H
+#include <Arduino.h>
 
 class FileManager
 {
 	public:
 		FileManager();
-		bool loadWifiConf(String *ssid, String *pass);
-		bool saveWifiConf(String *ssid, String *pass);
+		bool loadWifiConfig(String *ssid, String *pass);
+		bool saveWifiConfig(String *ssid, String *pass);
 
-}
+};
