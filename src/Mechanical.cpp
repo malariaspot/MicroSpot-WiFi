@@ -229,7 +229,7 @@ bool Mechanical::updatePos(){
 
   bool result;
   Line * response;
-  result = sendCommand("$h",OUTDATED,IDLE,ERROR,response);
+  result = sendCommand("?",OUTDATED,IDLE,ERROR,response);
   if(result){
     int index;
     if(index = response->content.indexOf("MPos:") < 0){
