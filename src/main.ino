@@ -20,6 +20,7 @@
 #include <ArduinoOTA.h>
 #include <Ticker.h>
 #include "Mechanical.h"
+#include "Mechanical.h"
 
 ///////////////////////////////////////////////
 // GPIO definitions
@@ -38,7 +39,8 @@
 /// @}
 
 
-WiFiServer server(80);
+//WiFiServer server(80);
+Server server();
 
 /**
  * @brief Default WiFi connection information.
@@ -163,9 +165,9 @@ void setup()
   String hostname(HOSTNAME);
   hostname += String(ESP.getChipId(), HEX);
 
-  String APname(HOSTNAME);
+  /*String APname(HOSTNAME);
   APname += String(ESP.getChipId(),HEX);
-  WiFi.hostname(hostname);
+  WiFi.hostname(hostname);*/
 
 
 
@@ -186,7 +188,7 @@ void setup()
     //Serial.println("No WiFi connection information available.");
   }
 
-  // Check WiFi connection
+  /*// Check WiFi connection
   // ... check mode
   if (WiFi.getMode() != WIFI_STA)
   {
@@ -240,6 +242,9 @@ void setup()
     //Serial.print("IP address: ");
     //Serial.println(WiFi.softAPIP());
   }
+  */
+
+  server.setUp();
 
   ledBlink.attach(1,ledFlick);
 
@@ -255,7 +260,7 @@ void setup()
  */
 void loop()
 {
-  serverLoop();
+  //serverLoop();
   yield();
   // Handle OTA server.
   ArduinoOTA.handle();
@@ -264,8 +269,7 @@ void loop()
 
 
 // prepare a web page to be send to a client (web browser)
-String prepareHtmlPage(String response) {
-  String htmlPage = String("HTTP/1.1 200 OK\r\n") +
+/*  String htmlPage = String("HTTP/1.1 200 OK\r\n") +
             "Content-Type: text/html\r\n" +
             "Connection: close\r\n" +  // the connection will be closed after completion of the response
             "Refresh: 5\r\n" +  // refresh the page automatically every 5 sec
@@ -298,4 +302,4 @@ void serverLoop() {
   client.flush();
   // Prepare the response
   client.println(prepareHtmlPage(val));
-}
+}*/
