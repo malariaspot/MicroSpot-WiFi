@@ -14,13 +14,10 @@ MicroServer::MicroServer() {
 
 void MicroServer::setUp(String hostname) {
 
-  
-  hostname += String(ESP.getChipId(), HEX);
-
   String APname = hostname;
 
   //Set the hostname of the server
- 	WiFi.hostname(hostname);
+  WiFi.hostname(hostname);
   
   //Check of there has been a change in WiFi configuration.
   String station_ssid, station_psk;
