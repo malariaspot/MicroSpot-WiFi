@@ -1,8 +1,25 @@
 #include "MicroServer.h"
 
-
+//#include "Mechanical.h"
+#include <Ticker.h>
 
 WiFiServer serverWifi(80);
+//Mechanical mechanical(115200);
+
+
+///////////////////////////////////////////////
+// LED ticker and functions to make a Blink
+//
+///////////////////////////////////////////////
+
+#define LEDPIN 14 //GPIO for the LED
+
+Ticker ledBlink;
+
+void ledFlick(){
+  digitalWrite(LEDPIN,!digitalRead(LEDPIN));
+}
+
 
 /**
  * Server implementation
@@ -13,6 +30,9 @@ MicroServer::MicroServer() {
 }
 
 void MicroServer::setUp(String hostname) {
+
+  pinMode(LEDPIN,OUTPUT);
+  digitalWrite(LEDPIN,LOW);
 
   String APname = hostname;
 
@@ -56,15 +76,25 @@ void MicroServer::setUp(String hostname) {
     delay(10);
 
     WiFi.softAP((const char *)APname.c_str(), this->ap_default_psk);
+    
+    ledBlink.attach(1,ledFlick);
   }
 
   serverWifi.begin();
   
+  //mechanical.toggle(true);
+  
+  pinMode(4,OUTPUT);
+  digitalWrite(4,LOW);
+  delay(100);
+  Serial.begin(115200);
+  Serial.flush();
+  
 }
 
 void MicroServer::run() {
-	
-	// Check if a client has connected
+
+  // Check if a client has connected
   client = serverWifi.available();
   if (!client) { return; }
   // Wait until the client sends some data
@@ -73,16 +103,44 @@ void MicroServer::run() {
   String req = client.readStringUntil('\r');
   client.flush();
   // Match the request
-  String val;
-  if (req.indexOf("/ayy/lmao") != -1) val = req;
-  else {
-    client.stop();
-    return;
+  String val = req.substring(4,req.indexOf("HTTP")-1);
+  
+  if(val.indexOf("/ayy/lmao") != -1)
+  {
+    val = req;
   }
+  else if(val.indexOf("/get/config") != -1)
+  {
+    val = "";
+    Serial.println("$$");
+    while(Serial.available() > 0)
+    {
+      val += Serial.readString();
+    }
+  }
+  else if(val.indexOf("/get/status") != -1)
+  {
+    val = "";
+    Serial.println("?");
+    String resp = "";
+    while(Serial.available() > 0)
+    {
+      resp += Serial.readString();
+    }
+    //trim the < and > characters from the GRBL response.
+    int len = resp.length();
+    val = resp.substring(1);
+  }
+  else
+  {
+    val = "404";
+  }
+  
   client.flush();
   // Prepare the response
-  client.println(prepareHtmlPage(val));
-  
+  client.println(prepareHtmlPage(val));  
+  client.stop();
+  return;
 }
 
 void 

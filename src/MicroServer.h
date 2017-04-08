@@ -18,7 +18,6 @@ class MicroServer {
 		void success();
 		void error();
 	private: 
-	//  Mechanical mechanical;
 		const char* ap_default_psk = "microspot"; ///< Default PSK.
 		String prepareHtmlPage(String response);
 		FileManager fileManager;
