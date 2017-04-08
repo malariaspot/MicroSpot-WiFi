@@ -11,20 +11,18 @@
 #include "FileManager.h"
 
 class MicroServer {
-public: 
-    MicroServer();
-    void setUp(String hostname);
-    void run();
-    void success();
-    void error();
-private: 
-  //  Mechanical mechanical;
-    WiFiServer serverWifi;
-    const char* ap_default_psk = "microspot"; ///< Default PSK.
-    String prepareHtmlPage(String response);
-    FileManager fileManager;
-    WifiClient client;
-
+	public: 
+		MicroServer();
+		void setUp(String hostname);
+		void run();
+		void success();
+		void error();
+	private: 
+	//  Mechanical mechanical;
+		const char* ap_default_psk = "microspot"; ///< Default PSK.
+		String prepareHtmlPage(String response);
+		FileManager fileManager;
+		WiFiClient client;
 };
 
 #endif //_SERVER_H

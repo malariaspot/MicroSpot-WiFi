@@ -2,20 +2,22 @@
 
 
 
-
+WiFiServer serverWifi(80);
 
 /**
  * Server implementation
  */
 
 MicroServer::MicroServer() {
+	/*
   this->serverWifi(80);
   this->fileManager();
+*/
 }
 
 void MicroServer::setUp(String hostname) {
 
-  
+  /*
   hostname += String(ESP.getChipId(), HEX);
 
   String APname = hostname;
@@ -63,9 +65,11 @@ void MicroServer::setUp(String hostname) {
   }
 
   serverWifi.begin();
+  */
 }
 
 void MicroServer::run() {
+	/*
 	// Check if a client has connected
   client = serverWifi.available();
   if (!client) { return; }
@@ -84,21 +88,23 @@ void MicroServer::run() {
   client.flush();
   // Prepare the response
   client.println(prepareHtmlPage(val));
+  */
 }
 
 void 
 MicroServer::success() 
 { 
-  client.println(prepareHtmlPage("Done")); 
+  //client.println(prepareHtmlPage("Done")); 
 }
 
 void 
 MicroServer::error() 
 {
-  client.println(prepareHtmlPage("Error")); 
+  //client.println(prepareHtmlPage("Error")); 
 }
 
 String MicroServer::prepareHtmlPage(String response) {
+	/*
   String htmlPage = String("HTTP/1.1 200 OK\r\n") +
             "Content-Type: text/html\r\n" +
             "Connection: close\r\n" +  // the connection will be closed after completion of the response
@@ -111,4 +117,5 @@ String MicroServer::prepareHtmlPage(String response) {
             "\r\n";
 
   return htmlPage;
+  */
 }
