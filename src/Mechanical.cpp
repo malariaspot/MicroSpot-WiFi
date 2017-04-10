@@ -5,7 +5,7 @@
 #define REQUESTLIMIT 200
 #define TICK 100
 
-#define ENABLEPIN 14
+#define ENABLEPIN 4
 
 
 
@@ -43,6 +43,7 @@ Mechanical::toggle(bool button)
       }
     }
     st = LOCK;
+    //Serial.flush();
     return true;
   }
   else
@@ -50,7 +51,7 @@ Mechanical::toggle(bool button)
     Serial.end();
     digitalWrite(ENABLEPIN,HIGH);
     st = OFF;
-    return true;
+    return false;
   }
 }
 
@@ -133,7 +134,7 @@ Mechanical::getPos(Position p)
 
 //Report config
 bool
-Mechanical::getConfig(Line * config)
+Mechanical::getConfig(String *config)
 {
   return sendCommand("$$", ERROR, this->st, this->st, config);
 }
@@ -156,24 +157,53 @@ Mechanical::getStatus()
 // Serial input check utilities //
 //////////////////////////////////
 
+//Safely send a command, under certain conditions, with certain consequences,
+//and expecting or not, a response that will be stored in a Line list.
+bool
+Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure)
+{
+  return this->sendCommand(command,atLeast,success,failure,NULL);
+}
+
+bool
+Mechanical::sendCommand(String command, Status atLeast,
+  Status success, Status failure, String *response)
+{
+  if(st >= atLeast)
+  {
+    Serial.println(command);
+    this->receiveLines(response);
+//    if(this->checkSanity(message))
+//    {
+      st = success;
+      return true;
+//    }
+//    else
+//    {
+//      st = failure;
+//      return false;
+//    }
+  }
+  else
+  {
+    *response = "not enough status";
+    return false;
+  }
+}
+
 //After sending a command, check if GRBL understood well.
 bool
-Mechanical::checkSanity(Line *message)
+Mechanical::checkSanity(String *message)
 {
-  Line *p = message;
-  while(p->next != NULL) p = p->next; //navigate to last line
-  if(p->content.equals("ok") && p->prev->content.equals("ok")) //if the two last lines are "ok"
+  int len = message->length();
+  if(message->substring(len-3,len) == "ok\r\n" &&
+      message->substring(len-8,len-4) == "ok\r\n") //if the two last lines are "ok"
   {
-    //delete the last two "ok" lines.
-    p->prev->prev->next = NULL; //Is this necessary? -> YES
-    delete(p->prev);
-    delete(p);
+    *message = message->substring(0,len-8); //trim the last two "ok"
     return true;
   }
   else
   {
-    //Deletes whole buffer
-    eraseBuffer(message);
     return false;
   }
 }
@@ -181,25 +211,21 @@ Mechanical::checkSanity(Line *message)
 //Receive the lines and put them into a concatenated Line
 //list.
 bool
-Mechanical::receiveLines(Line *message)
+Mechanical::receiveLines(String *message)
 {
-  Line *p = message;
-  if(Serial.available() == 0) return false;
+  if(Serial.available() == 0) 
+  {
+    *message = "Serial was empty";
+    return false;
+  }
   while(Serial.available() > 0)
   {
-    p->content = Serial.readStringUntil('\n');
-    p->next = new(Line);
-    p = p->next;
-  }
-  //link the previous pointers
-  while(p->next != NULL)
-  {
-    p->next->prev = p;
-    p = p->next;
+    *message += Serial.readStringUntil('\n');
   }
   return true;
 }
 
+/*
 //Safely free all memory allocated by a list of lines.
 void
 Mechanical::eraseBuffer(Line * buf)
@@ -218,6 +244,7 @@ Mechanical::eraseBuffer(Line * buf)
   delete(buf);
   buf = NULL;
 }
+*/
 
 /////////////////////////////////
 // Status management utilities //
@@ -228,18 +255,16 @@ Mechanical::eraseBuffer(Line * buf)
 bool Mechanical::updatePos(){
 
   bool result;
-  Line * response;
-  result = sendCommand("?",OUTDATED,IDLE,ERROR,response);
+  String response;
+  result = sendCommand("?",OUTDATED,IDLE,ERROR,&response);
   if(result){
     int index;
-    if(index = response->content.indexOf("MPos:") < 0){
-      this->eraseBuffer(response);
+    if(index = response.indexOf("MPos:") < 0){
       st = ERROR;
       return false;
     }else{
-      pos.x = response->content.substring(index + 5, index + 10).toFloat();
-      pos.y = response->content.substring(index + 12, index + 17).toFloat();
-      this->eraseBuffer(response);
+      pos.x = response.substring(index + 5, index + 10).toFloat();
+      pos.y = response.substring(index + 12, index + 17).toFloat();
       return true;
     }
   }
@@ -249,40 +274,4 @@ bool Mechanical::updatePos(){
 }
 
 
-//Safely send a command, under certain conditions, with certain consequences,
-//and expecting or not, a response that will be stored in a Line list.
-bool
-Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure)
-{
-  return this->sendCommand(command,atLeast,success,failure,NULL);
-}
 
-bool
-Mechanical::sendCommand(String command, Status atLeast,
-  Status success, Status failure, Line * response)
-{
-  if(st >= atLeast)
-  {
-    Serial.println(command);
-    Line * message;
-    this->receiveLines(message);
-    if(this->checkSanity(message))
-    {
-      st = success;
-      if(response)
-        response = message;
-      else
-        this->eraseBuffer(message);
-      return true;
-    }
-    else
-    {
-      st = failure;
-      return false;
-    }
-  }
-  else
-  {
-    return false;
-  }
-}

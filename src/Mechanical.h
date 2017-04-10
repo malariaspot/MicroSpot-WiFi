@@ -5,11 +5,13 @@ struct Position{
   float y;
 };
 
+/*
 struct Line{
   Line *prev;
   String content;
   Line *next;
 };
+*/
 
 enum Status{
   OFF, //Enable pin is off.
@@ -34,9 +36,9 @@ class Mechanical
 
     //Safely send a command, and expect a response or not.
     bool sendCommand(String command, Status atLeast, Status success, Status failure);
-    bool sendCommand(String command, Status atLeast, Status success, Status failure, Line * response);
-    bool receiveLines(Line *message); //Receive lines from GRBL.
-    bool checkSanity(Line *message); //Check if the response from GRBL is ok.
+    bool sendCommand(String command, Status atLeast, Status success, Status failure, String *response);
+    bool receiveLines(String *message); //Receive lines from GRBL.
+    bool checkSanity(String *message); //Check if the response from GRBL is ok.
     //checkSanity deletes the Line list if it yields a FALSE.
 
 
@@ -55,9 +57,9 @@ class Mechanical
 
     //Status reporting
     bool getPos(Position p); //Stores the position in the argument "p".
-    bool getConfig(Line * config); //Stores the config lines into Line list "config".
+    bool getConfig(String *config); //Stores the config lines into Line list "config".
     //After using getConfig, the Line should be erased with eraseBuffer.
     int getStatus(); //Returns a number corresponding the status.
 
-    static void eraseBuffer(Line * buf); //deletes whole list of lines.
+    //static void eraseBuffer(Line * buf); //deletes whole list of lines.
 };

@@ -1,10 +1,10 @@
 #include "MicroServer.h"
 
-//#include "Mechanical.h"
+#include "Mechanical.h"
 #include <Ticker.h>
 
 WiFiServer serverWifi(80);
-//Mechanical mechanical(115200);
+Mechanical mechanical(115200);
 
 
 ///////////////////////////////////////////////
@@ -82,13 +82,12 @@ void MicroServer::setUp(String hostname) {
 
   serverWifi.begin();
   
-  //mechanical.toggle(true);
+  if(!mechanical.toggle(true)){
+    ledBlink.detach();
+    ledBlink.attach(0.25,ledFlick);
+  }
   
-  pinMode(4,OUTPUT);
-  digitalWrite(4,LOW);
-  delay(100);
-  Serial.begin(115200);
-  Serial.flush();
+
   
 }
 
@@ -111,25 +110,23 @@ void MicroServer::run() {
   }
   else if(val.indexOf("/get/config") != -1)
   {
-    val = "";
-    Serial.println("$$");
-    while(Serial.available() > 0)
+    String config;
+    if(!mechanical.getConfig(&config))
     {
-      val += Serial.readString();
+      val = "get Config error";
+    }
+    else
+    {
+      if(config.length() == 0){
+        val = "RECEIVED EMPTY CONFIG";
+      }else{
+        val = config;
+      }
     }
   }
   else if(val.indexOf("/get/status") != -1)
   {
-    val = "";
-    Serial.println("?");
-    String resp = "";
-    while(Serial.available() > 0)
-    {
-      resp += Serial.readString();
-    }
-    //trim the < and > characters from the GRBL response.
-    int len = resp.length();
-    val = resp.substring(1);
+
   }
   else
   {
