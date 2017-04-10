@@ -11,8 +11,6 @@
  * Server implementation
  */
 
-Server::Server() {}
-
 void Server::setUp(String hostname) {
  	WiFi.hostname(hostname);
 

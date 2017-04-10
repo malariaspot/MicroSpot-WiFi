@@ -165,7 +165,7 @@ void setup() {
   ArduinoOTA.setHostname((const char *)hostname.c_str());
   ArduinoOTA.begin();
 
-  server.setUp();
+  server.setUp(hos);
 }
 
 /**
