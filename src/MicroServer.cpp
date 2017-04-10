@@ -1,20 +1,17 @@
 #include "MicroServer.h"
 
-
-
-WiFiServer serverWifi(80);
+//WiFiServer serverWifi(80);
+ESP8266WebServer serverWifi(80);  
 
 /**
  * Server implementation
  */
 
-MicroServer::MicroServer() {
-
+MicroServer::MicroServer(Mechanical *m) {
+  mechanical = m;
 }
 
 void MicroServer::setUp(String hostname) {
-
-  String APname = hostname;
 
   //Set the hostname of the server
   WiFi.hostname(hostname);
@@ -23,8 +20,7 @@ void MicroServer::setUp(String hostname) {
   String station_ssid, station_psk;
 
     // Load wifi connection information.
-  if (! fileManager.loadWifiConfig(&station_ssid, &station_psk))
-  {
+  if (! fileManager.loadWifiConfig(&station_ssid, &station_psk)) {
     station_ssid = "";
     station_psk = "";
   }
@@ -55,61 +51,50 @@ void MicroServer::setUp(String hostname) {
 
     delay(10);
 
-    WiFi.softAP((const char *)APname.c_str(), this->ap_default_psk);
+    WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
   }
+
+  serverWifi.on("/homeAxis", [this](){ handleHomeAxis();}); 
+  serverWifi.on("/moveAxis", [this](){ handleMoveAxis();}); 
+  serverWifi.on("/jogAxis", [this](){ handleJogAxis();}); 
+  serverWifi.on("/stopJog", [this](){ handleStopJog();});
 
   serverWifi.begin();
   
 }
 
-void MicroServer::run() {
-	
-	// Check if a client has connected
-  client = serverWifi.available();
-  if (!client) { return; }
-  // Wait until the client sends some data
-  while(!client.available()){ delay(1); }
-  // Read the first line of the request
-  String req = client.readStringUntil('\r');
-  client.flush();
-  // Match the request
-  String val;
-  if (req.indexOf("/ayy/lmao") != -1) val = req;
-  else {
-    client.stop();
-    return;
-  }
-  client.flush();
-  // Prepare the response
-  client.println(prepareHtmlPage(val));
+void MicroServer::run() { serverWifi.handleClient(); }
+void MicroServer::success() { serverWifi.send(200, "text/plain", "Done"); }
+void MicroServer::error() { serverWifi.send(404, "text/plain", "Error"); }
+
+void MicroServer::handleHomeAxis() { 
+  mechanical->homeAxis(); 
+  success();
+}
+
+void MicroServer::handleStopJog() { 
+  mechanical->stopJog();
+  success();
+}
+
+void MicroServer::handleMoveAxis() { 
+  if (serverWifi.arg("x") != "" && 
+      serverWifi.arg("y") != "" && 
+      serverWifi.arg("f") != "") { 
   
+    //std::tuple<int, int, int> positionTuple = strongToFloat(serverWifi.arg("x"), serverWifi.arg("y"), serverWifi.arg("f"));
+    //mechanical->moveAxis(std::get<0>(positionTuple), std::get<1>(positionTuple), std::get<2>(positionTuple));
+    success();
+  }else{ error(); }
 }
 
-void 
-MicroServer::success() 
-{ 
-  client.println(prepareHtmlPage("Done")); 
-}
+void MicroServer::handleJogAxis() { 
+  if (serverWifi.arg("x") != "" && 
+      serverWifi.arg("y") != "" && 
+      serverWifi.arg("f") != "") { 
 
-void 
-MicroServer::error() 
-{
-  client.println(prepareHtmlPage("Error")); 
-}
-
-String MicroServer::prepareHtmlPage(String response) {
-	
-  String htmlPage = String("HTTP/1.1 200 OK\r\n") +
-            "Content-Type: text/html\r\n" +
-            "Connection: close\r\n" +  // the connection will be closed after completion of the response
-            "Refresh: 5\r\n" +  // refresh the page automatically every 5 sec
-            "\r\n" +
-            "<!DOCTYPE HTML>" +
-            "<html>" +
-            response +
-            "</html>" +
-            "\r\n";
-
-  return htmlPage;
-  
+    //std::tuple<int, int, int> positionTuple = strongToFloat(serverWifi.arg("x"), serverWifi.arg("y"), serverWifi.arg("f"));
+    //mechanical->jogAxis(std::get<0>(positionTuple), std::get<1>(positionTuple), std::get<2>(positionTuple));
+    success();
+  }else{ error(); }
 }

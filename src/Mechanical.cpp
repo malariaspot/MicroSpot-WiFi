@@ -7,8 +7,6 @@
 
 #define ENABLEPIN 14
 
-
-
 ////////////////////
 // Public methods //
 ////////////////////

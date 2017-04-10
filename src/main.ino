@@ -12,25 +12,20 @@
 //
 ///////////////////////////////////////////////////////////////////
 
-
 #include <ArduinoOTA.h>
 #include <Ticker.h>
-#include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
 
-#include "Mechanical.h"
 #include "MicroServer.h"
 
 #define HOSTNAME "MicroSpot-" //Hostname and AP name root.
-
 
 ///////////////////////////////////////////////
 // Server declaration.
 //
 ///////////////////////////////////////////////
 
-MicroServer microServer;
-
+Mechanical mechanical(9600);
+MicroServer microServer(&mechanical);
 
 ///////////////////////////////////////////////
 // LED ticker and functions to make a Blink
@@ -74,7 +69,6 @@ void setup() {
 //
 ///////////////////////////////////////////////
 void loop() {
-  //serverLoop();
   microServer.run();
   yield();
   // Handle OTA server.
