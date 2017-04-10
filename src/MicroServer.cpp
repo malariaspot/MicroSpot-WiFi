@@ -69,12 +69,12 @@ void MicroServer::error() { serverWifi.send(404, "text/plain", "Error"); }
 
 void MicroServer::handleHomeAxis() { 
   mechanical->homeAxis(); 
-  success();
+  //success();
 }
 
 void MicroServer::handleStopJog() { 
   mechanical->stopJog();
-  success();
+  //success();
 }
 
 void MicroServer::handleMoveAxis() { 
