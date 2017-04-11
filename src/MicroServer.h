@@ -2,8 +2,8 @@
  * Project Untitled
  */
 
-#ifndef _MICROSERVER_H
-#define _MICROSERVER_H
+#ifndef MICROSERVER_H
+#define MICROSERVER_H
 
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h> 
@@ -13,15 +13,12 @@
 
 #include <string>
 #include <tuple>
-#include <cstdlib>
-
-#include <Arduino.h>
 
 #include "FileManager.h"
-#include "Mechanical.h"
+
+class Mechanical;
 
 class MicroServer {
-	Mechanical *mechanical;
 
 	public: 
 		MicroServer(Mechanical *m);
@@ -37,14 +34,15 @@ class MicroServer {
 		void handleJogAxis();
 		void handleStopJog();
 		FileManager fileManager;
+		Mechanical *mechanical;
 		WiFiClient client;
-		/*std::tuple<int, int, int> strongToFloat(String xs, String ys, String fs){
+		std::tuple<float, float, float> strongToFloat(String xs, String ys, String fs){
 			std::string::size_type sz; 
-    		float x = std::stof (xs ,&sz);
-    		float y = std::stof (ys ,&sz);
-    		float f = std::stof (fs ,&sz);
+    		float x = atof(xs.c_str());
+    		float y = atof(ys.c_str());
+    		float f = atof(fs.c_str());
 		    return std::make_tuple(x, y, f);
-		}*/ //FAILS - stof is only c++11 function
+		}
 };
 
-#endif //_SERVER_H
+#endif //MICROSERVER_H

@@ -16,6 +16,7 @@
 #include <Ticker.h>
 
 #include "MicroServer.h"
+#include "Mechanical.h"
 
 #define HOSTNAME "MicroSpot-" //Hostname and AP name root.
 

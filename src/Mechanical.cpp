@@ -1,5 +1,5 @@
 #include "Mechanical.h"
-
+#include "MicroServer.h"
 
 #define TIMEOUT 4000
 #define REQUESTLIMIT 200
@@ -282,5 +282,22 @@ Mechanical::sendCommand(String command, Status atLeast,
   else
   {
     return false;
+  }
+}
+
+void Mechanical::addObserver(MicroServer * ms) {
+  microServer = ms;
+}
+
+//TODO - reevaluate states
+void Mechanical::notifyObserver() {
+  switch (st) {
+      case IDLE:
+        microServer->success();
+        break;
+      case ERROR:
+        microServer->error();
+        break;
+      default: break;
   }
 }
