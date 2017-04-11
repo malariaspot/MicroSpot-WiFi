@@ -13,7 +13,6 @@
 ///////////////////////////////////////////////////////////////////
 
 #include <ArduinoOTA.h>
-#include <Ticker.h>
 
 #include "MicroServer.h"
 #include "Mechanical.h"
@@ -28,18 +27,6 @@
 Mechanical mechanical(115200); //change baud
 MicroServer microServer(&mechanical);
 
-///////////////////////////////////////////////
-// LED ticker and functions to make a Blink
-//
-///////////////////////////////////////////////
-
-#define LEDPIN 14 //GPIO for the LED
-
-Ticker ledBlink;
-
-void ledFlick(){
-  digitalWrite(LEDPIN,!digitalRead(LEDPIN));
-}
 
 
 ///////////////////////////////////////////////
@@ -47,14 +34,7 @@ void ledFlick(){
 //
 ///////////////////////////////////////////////
 void setup() { 
-
-  pinMode(LEDPIN,OUTPUT);
-  digitalWrite(LEDPIN,LOW);
-
-  delay(100);
-
-  ledBlink.attach(1,ledFlick);
-
+  
   String hostname(HOSTNAME);
   hostname += String(ESP.getChipId(), HEX);
 

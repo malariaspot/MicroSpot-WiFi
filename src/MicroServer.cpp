@@ -1,8 +1,23 @@
 #include "MicroServer.h"
 #include "Mechanical.h"
+#include <Ticker.h>
 
 //WiFiServer serverWifi(80);
 ESP8266WebServer serverWifi(80);  
+
+///////////////////////////////////////////////
+// LED ticker and functions to make a Blink
+//
+///////////////////////////////////////////////
+
+#define LEDPIN 14 //GPIO for the LED
+
+Ticker ledBlink;
+
+void ledFlick(){
+  digitalWrite(LEDPIN,!digitalRead(LEDPIN));
+}
+
 
 /**
  * Server implementation
@@ -49,6 +64,11 @@ void MicroServer::setUp(String hostname) {
   // Check connection
   if(WiFi.status() != WL_CONNECTED) {
     // Go into software AP mode.
+    pinMode(LEDPIN,OUTPUT);
+    digitalWrite(LEDPIN,LOW);
+    delay(100);
+    ledBlink.attach(1,ledFlick);
+
     WiFi.mode(WIFI_AP);
 
     delay(10);
@@ -61,8 +81,12 @@ void MicroServer::setUp(String hostname) {
   serverWifi.on("/jogAxis", [this](){ handleJogAxis();}); 
   serverWifi.on("/stopJog", [this](){ handleStopJog();});
   serverWifi.on("/ayy/lmao", [this](){ handleAyyLmao();});
+  serverWifi.on("/unlockAxis", [this](){handleUnlockAxis();});
+  serverWifi.on("/toggle", [this](){handleToggle();});
 
   serverWifi.begin();
+
+  mechanical->toggle(true);
   
 }
 
@@ -78,10 +102,7 @@ void MicroServer::handleMoveAxis() {
   if (serverWifi.arg("x") != "" && 
       serverWifi.arg("y") != "" && 
       serverWifi.arg("f") != "") { 
-  
-    std::tuple<float, float, float> positionTuple = strongToFloat(serverWifi.arg("x"), serverWifi.arg("y"), serverWifi.arg("f"));
-    mechanical->moveAxis(std::get<0>(positionTuple), std::get<1>(positionTuple), std::get<2>(positionTuple));
-    
+    mechanical->moveAxis((String)serverWifi.arg("x"), (String)serverWifi.arg("y"), (String)serverWifi.arg("f"));
   }else{ error(); }
 }
 
@@ -89,11 +110,18 @@ void MicroServer::handleJogAxis() {
   if (serverWifi.arg("x") != "" && 
       serverWifi.arg("y") != "" && 
       serverWifi.arg("f") != "") { 
-
-    std::tuple<float, float, float> positionTuple = strongToFloat(serverWifi.arg("x"), serverWifi.arg("y"), serverWifi.arg("f"));
-    mechanical->jogAxis(std::get<0>(positionTuple), std::get<1>(positionTuple), std::get<2>(positionTuple));
-    
+    mechanical->jogAxis((String)serverWifi.arg("x"), (String)serverWifi.arg("y"), (String)serverWifi.arg("f"));
   }else{ error(); }
 }
 
 void MicroServer::handleAyyLmao() { success(); }
+
+void MicroServer::handleUnlockAxis() {mechanical->unlockAxis();}
+
+void MicroServer::handleToggle() {
+  if (serverWifi.arg("option") !=  "") { 
+    if(serverWifi.arg("option") == "true") mechanical->toggle(true);
+    else if(serverWifi.arg("option") == "false") mechanical->toggle(false);
+    else error();
+  }else{ error(); }
+}

@@ -33,6 +33,8 @@ class MicroServer {
 		void handleJogAxis();
 		void handleStopJog();
 		void handleAyyLmao();
+		void handleUnlockAxis();
+		void handleToggle();
 		FileManager fileManager;
 		Mechanical *mechanical;
 		std::tuple<float, float, float> strongToFloat(String xs, String ys, String fs){
