@@ -25,7 +25,7 @@
 //
 ///////////////////////////////////////////////
 
-Mechanical mechanical(9600); //change baud
+Mechanical mechanical(115200); //change baud
 MicroServer microServer(&mechanical);
 
 ///////////////////////////////////////////////
