@@ -2,8 +2,8 @@
 #define POSITION_H
 
 struct Position{
-  float x;
-  float y;
+  String x;
+  String y;
 };
 
 #endif //POSITION_H

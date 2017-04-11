@@ -37,11 +37,13 @@ Mechanical::toggle(bool button)
       if(millis()-timeStamp > TIMEOUT) {
         Serial.end();
         st = OFFLINE;
+        notifyObserver();
         return false;
       }
     }
     st = LOCK;
-    //Serial.flush();
+    flush();
+    notifyObserver();
     return true;
   }
   else
@@ -49,6 +51,7 @@ Mechanical::toggle(bool button)
     Serial.end();
     digitalWrite(ENABLEPIN,HIGH);
     st = OFF;
+    notifyObserver();
     return false;
   }
 }
@@ -65,8 +68,8 @@ Mechanical::homeAxis()
   bool result;
   result = sendCommand("$h",LOCK,IDLE,ERROR);
   if(result){
-    pos.x = 0;
-    pos.y = 0;
+    pos.x = "0";
+    pos.y = "0";
     return true;
   }
   else{
@@ -76,27 +79,32 @@ Mechanical::homeAxis()
 
 //Uninterruptible movement
 bool
-Mechanical::moveAxis(float X, float Y, float F)
+Mechanical::moveAxis(String X, String Y, String F)
 {
   bool result;
-  result = sendCommand("G1 X" + String(X, 3) + " Y" + String(Y, 3) + " F" + String(F, 3),
-    MOVING,IDLE,ERROR);
+  result = sendCommand("G1 X" + X + " Y" + Y + " F" + F,
+    MOVING,MOVING,ERROR);
   if(result){
+    setStatus(MOVING);
+    waitForMove();
     pos.x = X;
     pos.y = Y;
-    return true;
+    setStatus(IDLE);
+    ;
   }
   else{
-    return false;
+    setStatus(ERROR);
   }
+  notifyObserver();
+  return result;
 }
 
 //Interruptible movement
 bool
-Mechanical::jogAxis(float X,float Y,float F)
+Mechanical::jogAxis(String X, String Y, String F)
 {
-  return sendCommand("$J=G1 X" + String(X , 3) + " Y" + String(Y , 3) + " F" + String(F , 3),
-    MOVING,OUTDATED,ERROR);
+  return sendCommand("$J=G90 X" + X + " Y" + Y + " F" + F,
+    MOVING, OUTDATED, ERROR);
 }
 
 //stop jogging movement.
@@ -104,6 +112,12 @@ bool
 Mechanical::stopJog()
 {
   return sendCommand("\x85",MOVING,OUTDATED,ERROR);
+}
+
+void Mechanical::unlockAxis(){
+  Serial.println("$X");
+  setStatus(IDLE);
+  notifyObserver();
 }
 
 ////////////////////
@@ -170,23 +184,47 @@ Mechanical::sendCommand(String command, Status atLeast,
   if(st >= atLeast)
   {
     Serial.println(command);
-    this->receiveLines(response);
-//    if(this->checkSanity(message))
-//    {
-      st = success;
-      return true;
+    if(response != NULL){
+      this->receiveLines(response);
+//    if(this->checkSanity(message)){
+        setStatus(success);
+        return true;
 //    }
 //    else
 //    {
 //      st = failure;
 //      return false;
 //    }
+    }
   }
   else
   {
     *response = "not enough status";
     return false;
   }
+}
+
+
+//Wait for GRBL to send a response.
+void Mechanical::waitResponse(){
+  while(Serial.available() == 0){
+    delay(100);
+  }
+  return;
+}
+ 
+void Mechanical::flush(){
+  while(Serial.available() > 0) Serial.read();//empty buffer.
+  return;
+}
+
+void Mechanical::waitForMove(){
+  flush(); //flush previous messages in buffer.
+  Serial.println("G4P0"); //send improvised confirm token.
+  waitResponse(); //wait for G4P0's confirm
+  flush(); //flush the G4P0's confirm.
+  waitResponse(); //wait for the actual confirm.
+  return;
 }
 
 //After sending a command, check if GRBL understood well.
@@ -213,7 +251,6 @@ Mechanical::receiveLines(String *message)
 {
   if(Serial.available() == 0) 
   {
-    *message = "Serial was empty";
     return false;
   }
   while(Serial.available() > 0)
@@ -223,26 +260,6 @@ Mechanical::receiveLines(String *message)
   return true;
 }
 
-/*
-//Safely free all memory allocated by a list of lines.
-void
-Mechanical::eraseBuffer(Line * buf)
-{
-  Line *p = buf;
-   //navigate to last line
-  while(p->next != NULL) p = p->next;
-
-  //Deletes whole buffer
-  while(p->prev != NULL)
-  {
-    p = p->prev;
-    delete(p->next);
-  }
-  delete(p);
-  delete(buf);
-  buf = NULL;
-}
-*/
 
 /////////////////////////////////
 // Status management utilities //
@@ -271,7 +288,10 @@ bool Mechanical::updatePos(){
   }
 }
 
-
+void Mechanical::setStatus(Status stat){
+  st = stat;
+  return;
+}
 
 void Mechanical::addObserver(MicroServer * ms) {
   microServer = ms;
@@ -286,6 +306,8 @@ void Mechanical::notifyObserver() {
       case ERROR:
         microServer->error();
         break;
-      default: break;
+      default: 
+        microServer->success(); 
+        break;
   }
 }
