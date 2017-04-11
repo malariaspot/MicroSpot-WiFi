@@ -8,8 +8,9 @@ ESP8266WebServer serverWifi(80);
  * Server implementation
  */
 
-MicroServer::MicroServer(Mechanical *m) {
-  mechanical = m;
+MicroServer::MicroServer(Mechanical *m) { 
+  mechanical = m; 
+  mechanical->addObserver(this);
 }
 
 void MicroServer::setUp(String hostname) {
@@ -66,18 +67,12 @@ void MicroServer::setUp(String hostname) {
 }
 
 void MicroServer::run() { serverWifi.handleClient(); }
+
 void MicroServer::success() { serverWifi.send(200, "text/plain", "Done"); }
 void MicroServer::error() { serverWifi.send(404, "text/plain", "Error"); }
 
-void MicroServer::handleHomeAxis() { 
-  mechanical->homeAxis(); 
-  //success();
-}
-
-void MicroServer::handleStopJog() { 
-  mechanical->stopJog();
-  //success();
-}
+void MicroServer::handleHomeAxis() { mechanical->homeAxis(); }
+void MicroServer::handleStopJog() { mechanical->stopJog(); }
 
 void MicroServer::handleMoveAxis() { 
   if (serverWifi.arg("x") != "" && 
@@ -86,7 +81,7 @@ void MicroServer::handleMoveAxis() {
   
     std::tuple<float, float, float> positionTuple = strongToFloat(serverWifi.arg("x"), serverWifi.arg("y"), serverWifi.arg("f"));
     mechanical->moveAxis(std::get<0>(positionTuple), std::get<1>(positionTuple), std::get<2>(positionTuple));
-    //success();
+    
   }else{ error(); }
 }
 
@@ -97,10 +92,8 @@ void MicroServer::handleJogAxis() {
 
     std::tuple<float, float, float> positionTuple = strongToFloat(serverWifi.arg("x"), serverWifi.arg("y"), serverWifi.arg("f"));
     mechanical->jogAxis(std::get<0>(positionTuple), std::get<1>(positionTuple), std::get<2>(positionTuple));
-    //success();
+    
   }else{ error(); }
 }
 
-void MicroServer::handleAyyLmao() { 
-  success();
-}
+void MicroServer::handleAyyLmao() { success(); }

@@ -28,7 +28,6 @@ class MicroServer {
 		void error();
 	private: 
 		const char* ap_default_psk = "microspot"; ///< Default PSK.
-		String prepareHtmlPage(String response);
 		void handleHomeAxis();
 		void handleMoveAxis();
 		void handleJogAxis();
@@ -36,7 +35,6 @@ class MicroServer {
 		void handleAyyLmao();
 		FileManager fileManager;
 		Mechanical *mechanical;
-		WiFiClient client;
 		std::tuple<float, float, float> strongToFloat(String xs, String ys, String fs){
 			std::string::size_type sz; 
     		float x = atof(xs.c_str());
