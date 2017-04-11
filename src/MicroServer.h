@@ -33,6 +33,7 @@ class MicroServer {
 		void handleMoveAxis();
 		void handleJogAxis();
 		void handleStopJog();
+		void handleAyyLmao();
 		FileManager fileManager;
 		Mechanical *mechanical;
 		WiFiClient client;

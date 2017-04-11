@@ -59,6 +59,7 @@ void MicroServer::setUp(String hostname) {
   serverWifi.on("/moveAxis", [this](){ handleMoveAxis();}); 
   serverWifi.on("/jogAxis", [this](){ handleJogAxis();}); 
   serverWifi.on("/stopJog", [this](){ handleStopJog();});
+  serverWifi.on("/ayy/lmao", [this](){ handleAyyLmao();});
 
   serverWifi.begin();
   
@@ -98,4 +99,8 @@ void MicroServer::handleJogAxis() {
     mechanical->jogAxis(std::get<0>(positionTuple), std::get<1>(positionTuple), std::get<2>(positionTuple));
     //success();
   }else{ error(); }
+}
+
+void MicroServer::handleAyyLmao() { 
+  success();
 }
