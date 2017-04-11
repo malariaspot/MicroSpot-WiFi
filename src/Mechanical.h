@@ -1,286 +1,63 @@
-#include "Mechanical.h"
+#include "Arduino.h"
 
+struct Position{
+  float x;
+  float y;
+};
 
-#define TIMEOUT 4000
-#define REQUESTLIMIT 200
-#define TICK 100
+struct Line{
+  Line *prev;
+  String content;
+  Line *next;
+};
 
-#define ENABLEPIN 14
+enum Status{
+  OFF, //Enable pin is off.
+  OFFLINE, //Enable pin is on, but serial is not activated.
+  ERROR, //Connection has ben stablished, but GRBL is in an ERROR state
+  LOCK, //GRBL is in an ALARM/LOCK state, such as limit hit or not homed.
+  MOVING, //The motors are expected to be moving.
+  OUTDATED, //The motors may be stopped, but the position reported may not be correct.
+  IDLE //GRBL is sitting idle, and the position has been reported by the machine.
+};
 
-////////////////////
-// Public methods //
-////////////////////
-
-/////////////////////////////////
-// Instatiation and activation //
-//                             //
-/////////////////////////////////
-
-Mechanical::Mechanical(int baud)
+class Mechanical
 {
-  this->baudios = baud;
-  pinMode(ENABLEPIN,OUTPUT);
-  this->st = OFF;
-}
 
-//Activate and deactivate serial connection.
-bool
-Mechanical::toggle(bool button)
-{
-  if(button)
-  {
-    digitalWrite(ENABLEPIN,LOW);
-    delay(TICK); //delay cautelar time before starting the communication.
-    Serial.begin(this->baudios);
-    timeStamp = millis();
-    while(!Serial){
-      if(millis()-timeStamp > TIMEOUT) {
-        Serial.end();
-        st = OFFLINE;
-        return false;
-      }
-    }
-    st = LOCK;
-    return true;
-  }
-  else
-  {
-    Serial.end();
-    digitalWrite(ENABLEPIN,HIGH);
-    st = OFF;
-    return true;
-  }
-}
+  private:
+    int baudios;
+    double timeStamp;
+    Status st = OFF;
+    Position pos;
 
-//////////////////////////
-// Motion control calls //
-//                      //
-//////////////////////////
+    bool updatePos(); //Asks GRBL its position.
 
-//Home the axes
-bool
-Mechanical::homeAxis()
-{
-  bool result;
-  result = sendCommand("$h",LOCK,IDLE,ERROR);
-  if(result){
-    pos.x = 0;
-    pos.y = 0;
-    return true;
-  }
-  else{
-    return false;
-  }
-}
-
-//Uninterruptible movement
-bool
-Mechanical::moveAxis(float X, float Y, float F)
-{
-  bool result;
-  result = sendCommand("G1 X" + String(X, 3) + " Y" + String(Y, 3) + " F" + String(F, 3),
-    MOVING,IDLE,ERROR);
-  if(result){
-    pos.x = X;
-    pos.y = Y;
-    return true;
-  }
-  else{
-    return false;
-  }
-}
-
-//Interruptible movement
-bool
-Mechanical::jogAxis(float X,float Y,float F)
-{
-  return sendCommand("$J=G1 X" + String(X , 3) + " Y" + String(Y , 3) + " F" + String(F , 3),
-    MOVING,OUTDATED,ERROR);
-}
-
-//stop jogging movement.
-bool
-Mechanical::stopJog()
-{
-  return sendCommand("\x85",MOVING,OUTDATED,ERROR);
-}
-
-////////////////////
-// Info reporting //
-//                //
-////////////////////
-
-//Report position
-bool
-Mechanical::getPos(Position p)
-{
-  if(st == IDLE)
-  {
-    p = pos;
-    return true;
-  }else{
-    if (updatePos()){
-      p = pos;
-      return true;
-    }
-    else{
-      return false;
-    }
-  }
-}
-
-//Report config
-bool
-Mechanical::getConfig(Line * config)
-{
-  return sendCommand("$$", ERROR, this->st, this->st, config);
-}
-
-//Returns the number of the current status
-int
-Mechanical::getStatus()
-{
-  return this->st;
-}
-
-/////////////////////
-//                 //
-// Private methods //
-//                 //
-/////////////////////
+    //Safely send a command, and expect a response or not.
+    bool sendCommand(String command, Status atLeast, Status success, Status failure);
+    bool sendCommand(String command, Status atLeast, Status success, Status failure, Line * response);
+    bool receiveLines(Line *message); //Receive lines from GRBL.
+    bool checkSanity(Line *message); //Check if the response from GRBL is ok.
+    //checkSanity deletes the Line list if it yields a FALSE.
 
 
-//////////////////////////////////
-// Serial input check utilities //
-//////////////////////////////////
+  public:
+    //Instantiation
+    Mechanical(int baud); //Instantiate the object and choose baudrate.
 
-//After sending a command, check if GRBL understood well.
-bool
-Mechanical::checkSanity(Line *message)
-{
-  Line *p = message;
-  while(p->next != NULL) p = p->next; //navigate to last line
-  if(p->content.equals("ok") && p->prev->content.equals("ok")) //if the two last lines are "ok"
-  {
-    //delete the last two "ok" lines.
-    p->prev->prev->next = NULL; //Is this necessary? -> YES
-    delete(p->prev);
-    delete(p);
-    return true;
-  }
-  else
-  {
-    //Deletes whole buffer
-    eraseBuffer(message);
-    return false;
-  }
-}
+    //Serial activation and release
+    bool toggle(bool state); //Turn on or off the serial interface
 
-//Receive the lines and put them into a concatenated Line
-//list.
-bool
-Mechanical::receiveLines(Line *message)
-{
-  Line *p = message;
-  if(Serial.available() == 0) return false;
-  while(Serial.available() > 0)
-  {
-    p->content = Serial.readStringUntil('\n');
-    p->next = new(Line);
-    p = p->next;
-  }
-  //link the previous pointers
-  while(p->next != NULL)
-  {
-    p->next->prev = p;
-    p = p->next;
-  }
-  return true;
-}
+    //Movement
+    bool homeAxis(); //Take axis to home position.
+    bool moveAxis(float X,float Y,float F); //Ininterruptible move to (X,Y) at speed F.
+    bool jogAxis(float X,float Y,float F); //Interruptible move to (X,Y) at speed F.
+    bool stopJog();  //Stop an interruptible movement.
 
-//Safely free all memory allocated by a list of lines.
-void
-Mechanical::eraseBuffer(Line * buf)
-{
-  Line *p = buf;
-   //navigate to last line
-  while(p->next != NULL) p = p->next;
+    //Status reporting
+    bool getPos(Position p); //Stores the position in the argument "p".
+    bool getConfig(Line * config); //Stores the config lines into Line list "config".
+    //After using getConfig, the Line should be erased with eraseBuffer.
+    int getStatus(); //Returns a number corresponding the status.
 
-  //Deletes whole buffer
-  while(p->prev != NULL)
-  {
-    p = p->prev;
-    delete(p->next);
-  }
-  delete(p);
-  delete(buf);
-  buf = NULL;
-}
-
-/////////////////////////////////
-// Status management utilities //
-/////////////////////////////////
-
-//Ask GRBL for position, and update our local variables.
-//The machine needs to have it's axis stopped.
-bool Mechanical::updatePos(){
-
-  bool result;
-  Line * response;
-  result = sendCommand("?",OUTDATED,IDLE,ERROR,response);
-  if(result){
-    int index;
-    if(index = response->content.indexOf("MPos:") < 0){
-      this->eraseBuffer(response);
-      st = ERROR;
-      return false;
-    }else{
-      pos.x = response->content.substring(index + 5, index + 10).toFloat();
-      pos.y = response->content.substring(index + 12, index + 17).toFloat();
-      this->eraseBuffer(response);
-      return true;
-    }
-  }
-  else{
-    return false;
-  }
-}
-
-
-//Safely send a command, under certain conditions, with certain consequences,
-//and expecting or not, a response that will be stored in a Line list.
-bool
-Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure)
-{
-  return this->sendCommand(command,atLeast,success,failure,NULL);
-}
-
-bool
-Mechanical::sendCommand(String command, Status atLeast,
-  Status success, Status failure, Line * response)
-{
-  if(st >= atLeast)
-  {
-    Serial.println(command);
-    Line * message;
-    this->receiveLines(message);
-    if(this->checkSanity(message))
-    {
-      st = success;
-      if(response)
-        response = message;
-      else
-        this->eraseBuffer(message);
-      return true;
-    }
-    else
-    {
-      st = failure;
-      return false;
-    }
-  }
-  else
-  {
-    return false;
-  }
-}
+    static void eraseBuffer(Line * buf); //deletes whole list of lines.
+};
