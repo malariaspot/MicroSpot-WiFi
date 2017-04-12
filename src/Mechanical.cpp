@@ -19,6 +19,8 @@
 Mechanical::Mechanical(int baud)
 {
   this->baudios = baud;
+  maxpos.x = MAX_X;
+  maxpos.y = MAX_Y;
   pinMode(ENABLEPIN,OUTPUT);
   this->st = OFF;
 }
@@ -27,6 +29,7 @@ Mechanical::Mechanical(int baud)
 bool
 Mechanical::toggle(bool button)
 {
+  String notice;
   if(button)
   {
     digitalWrite(ENABLEPIN,LOW);
@@ -37,13 +40,15 @@ Mechanical::toggle(bool button)
       if(millis()-timeStamp > TIMEOUT) {
         Serial.end();
         st = OFFLINE;
-        notifyObserver();
+        notice = "Serial connection establishment timed out!";
+        notifyObserver(notice);
         return false;
       }
     }
     st = LOCK;
     flush();
-    notifyObserver();
+    notice = "Conection stablished";
+    notifyObserver(notice);
     return true;
   }
   else
@@ -51,7 +56,8 @@ Mechanical::toggle(bool button)
     Serial.end();
     digitalWrite(ENABLEPIN,HIGH);
     st = OFF;
-    notifyObserver();
+    notice = "Serial connection turned off";
+    notifyObserver(notice);
     return false;
   }
 }
@@ -66,15 +72,22 @@ bool
 Mechanical::homeAxis()
 {
   bool result;
+  String notice;
   result = sendCommand("$h",LOCK,IDLE,ERROR);
   if(result){
+    setStatus(MOVING);
+    waitForMove();
     pos.x = "0";
     pos.y = "0";
-    return true;
+    setStatus(IDLE);
+    notice = "Axes homed successfully";
   }
   else{
-    return false;
+    setStatus(ERROR);
+    notice = "Error when sending the command! (checkSanity error)";
   }
+  notifyObserver(notice);
+  return result;
 }
 
 //Uninterruptible movement
@@ -82,6 +95,7 @@ bool
 Mechanical::moveAxis(String X, String Y, String F)
 {
   bool result;
+  String notice;
   result = sendCommand("G1 X" + X + " Y" + Y + " F" + F,
     MOVING,MOVING,ERROR);
   if(result){
@@ -90,12 +104,13 @@ Mechanical::moveAxis(String X, String Y, String F)
     pos.x = X;
     pos.y = Y;
     setStatus(IDLE);
-    ;
+    notice = "Movement completed";
   }
   else{
     setStatus(ERROR);
+    notice = "Error when sending the command! (checkSanity error)";
   }
-  notifyObserver();
+  notifyObserver(notice);
   return result;
 }
 
@@ -117,7 +132,7 @@ Mechanical::stopJog()
 void Mechanical::unlockAxis(){
   Serial.println("$X");
   setStatus(IDLE);
-  notifyObserver();
+  notifyObserver("CAUTION: Axis unlocked!");
 }
 
 ////////////////////
@@ -127,21 +142,22 @@ void Mechanical::unlockAxis(){
 
 //Report position
 bool
-Mechanical::getPos(Position p)
+Mechanical::getPos()
 {
-  if(st == IDLE)
-  {
-    p = pos;
-    return true;
-  }else{
-    if (updatePos()){
-      p = pos;
-      return true;
+  String notice;
+  if(st == IDLE){
+    notice = "X: "  + pos.x + " Y: " + pos.y;
+  }
+  else{
+    if (askPos()){
+      notice = "X: "  + pos.x + " Y: " + pos.y;
     }
     else{
-      return false;
+      setStatus(ERROR);
+      notice = "Position cannot be determined";
     }
   }
+  notifyObserver(notice);
 }
 
 //Report config
@@ -156,6 +172,34 @@ int
 Mechanical::getStatus()
 {
   return this->st;
+}
+
+//Ask GRBL for position, and update our local variables.
+bool Mechanical::askPos(){
+  bool result;
+  String response;
+  result = sendCommand("?", MOVING, st, ERROR, &response);
+  if(result){
+    int index;
+    if(index = response.indexOf("MPos:") < 0){
+      setStatus(ERROR);
+      return false;
+    }else{
+      pos.x = response.substring(index + 5, index + 10);
+      pos.y = response.substring(index + 12, index + 17);
+      return true;
+    }
+  }
+  else{
+    return false;
+  }
+  
+}
+
+//Change the status of the machine.
+void Mechanical::setStatus(Status stat){
+  st = stat;
+  return;
 }
 
 /////////////////////
@@ -262,52 +306,31 @@ Mechanical::receiveLines(String *message)
 
 
 /////////////////////////////////
-// Status management utilities //
+// Server notifying tools      //
 /////////////////////////////////
 
-//Ask GRBL for position, and update our local variables.
-//The machine needs to have it's axis stopped.
-bool Mechanical::updatePos(){
-
-  bool result;
-  String response;
-  result = sendCommand("?",OUTDATED,IDLE,ERROR,&response);
-  if(result){
-    int index;
-    if(index = response.indexOf("MPos:") < 0){
-      st = ERROR;
-      return false;
-    }else{
-      pos.x = response.substring(index + 5, index + 10).toFloat();
-      pos.y = response.substring(index + 12, index + 17).toFloat();
-      return true;
-    }
-  }
-  else{
-    return false;
-  }
-}
-
-void Mechanical::setStatus(Status stat){
-  st = stat;
-  return;
-}
 
 void Mechanical::addObserver(MicroServer * ms) {
   microServer = ms;
 }
 
 //TODO - reevaluate states
-void Mechanical::notifyObserver() {
+void Mechanical::notifyObserver(String notice) {
   switch (st) {
-      case IDLE:
-        microServer->success();
-        break;
+      case OFF:
+      case OFFLINE:
       case ERROR:
-        microServer->error("Error: GRBL status related error!");
+        microServer->error("Error: " + notice);
         break;
+      case LOCK:
+      case MOVING:
+      case OUTDATED:
+      case IDLE:
+        microServer->success(notice);
+        break;
+
       default: 
-        microServer->success(); 
+        microServer->success(notice); 
         break;
   }
 }

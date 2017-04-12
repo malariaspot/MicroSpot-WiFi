@@ -6,6 +6,8 @@
 #include "Position.h"
 #include "Status.h"
 
+#define MAX_X "50"
+#define MAX_Y "15"
 
 class MicroServer;
 
@@ -18,22 +20,25 @@ class Mechanical
     double timeStamp;
     Status st = OFF;
     Position pos;
+    Position maxpos;
 
-    bool updatePos(); //Asks GRBL its position.
+    bool askPos(); //Asks GRBL its position with "?".
 
     //Safely send a command, and expect a response or not.
     bool sendCommand(String command, Status atLeast, Status success, Status failure);
     bool sendCommand(String command, Status atLeast, Status success, Status failure, String *response);
+    //Receive lines from GRBL.
+    bool receiveLines(String *message);
+    //Check if the response from GRBL is ok.
+    bool checkSanity(String *message);
+    
     //Wait for a response from GRBL
     void waitResponse(); 
     //flush input serial stream
     void flush();
     //wait for a movement to finish before continuing execution.
     void waitForMove();
-    //Receive lines from GRBL.
-    bool receiveLines(String *message);
-    //Check if the response from GRBL is ok.
-    bool checkSanity(String *message);
+    
     //Change the status
     void setStatus(Status stat);
 
@@ -53,12 +58,12 @@ class Mechanical
     void unlockAxis(); //Send and unlock token to GRBL. Breaks stability. Devs only.
 
     //Status reporting
-    bool getPos(Position p); //Stores the position in the argument "p".
+    bool getPos(); //Reports current position.
     bool getConfig(String *config); //Stores the config lines into Line list "config".
     int getStatus(); //Returns a number corresponding the status.
 
     void addObserver(MicroServer * ms); //ADDED - for the observation pattern
-    void notifyObserver(); //ADDED - for the observation pattern
+    void notifyObserver(String notice); //ADDED - for the observation pattern
 
 };
 
