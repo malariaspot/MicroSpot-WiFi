@@ -304,7 +304,7 @@ void Mechanical::notifyObserver() {
         microServer->success();
         break;
       case ERROR:
-        microServer->error();
+        microServer->error("Error: GRBL status related error!");
         break;
       default: 
         microServer->success(); 

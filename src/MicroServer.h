@@ -25,7 +25,7 @@ class MicroServer {
 		void setUp(String hostname);
 		void run();
 		void success();
-		void error();
+		void error(String msg);
 	private: 
 		const char* ap_default_psk = "microspot"; ///< Default PSK.
 		void handleHomeAxis();
@@ -37,13 +37,6 @@ class MicroServer {
 		void handleToggle();
 		FileManager fileManager;
 		Mechanical *mechanical;
-		std::tuple<float, float, float> strongToFloat(String xs, String ys, String fs){
-			std::string::size_type sz; 
-    		float x = atof(xs.c_str());
-    		float y = atof(ys.c_str());
-    		float f = atof(fs.c_str());
-		    return std::make_tuple(x, y, f);
-		}
 };
 
 #endif //MICROSERVER_H
