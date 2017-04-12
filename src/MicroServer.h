@@ -24,7 +24,7 @@ class MicroServer {
 		MicroServer(Mechanical *m);
 		void setUp(String hostname);
 		void run();
-		void success();
+		void success(String msg);
 		void error(String msg);
 	private: 
 		const char* ap_default_psk = "microspot"; ///< Default PSK.
@@ -35,6 +35,7 @@ class MicroServer {
 		void handleAyyLmao();
 		void handleUnlockAxis();
 		void handleToggle();
+                void handleGetPos();
 		FileManager fileManager;
 		Mechanical *mechanical;
 };

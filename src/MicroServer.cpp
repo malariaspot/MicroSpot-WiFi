@@ -76,6 +76,11 @@ void MicroServer::setUp(String hostname) {
     WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
   }
 
+
+  /////////////////////
+  // Server commands //
+  /////////////////////
+  
   serverWifi.on("/homeAxis", [this](){ handleHomeAxis();}); 
   serverWifi.on("/moveAxis", [this](){ handleMoveAxis();}); 
   serverWifi.on("/jogAxis", [this](){ handleJogAxis();}); 
@@ -83,6 +88,7 @@ void MicroServer::setUp(String hostname) {
   serverWifi.on("/ayy/lmao", [this](){ handleAyyLmao();}); //TODO - remove
   serverWifi.on("/unlockAxis", [this](){handleUnlockAxis();});
   serverWifi.on("/toggle", [this](){handleToggle();});
+  serverWifi.on("/getPos", [this](){handleGetPos();});
 
   serverWifi.begin();
 
@@ -92,10 +98,23 @@ void MicroServer::setUp(String hostname) {
 
 void MicroServer::run() { serverWifi.handleClient(); }
 
-void MicroServer::success() { serverWifi.send(200, "text/plain", "Success: Done!"); }
+
+//////////////////////
+// Server responses //
+//                  //
+//////////////////////
+
+void MicroServer::success(String msg) { serverWifi.send(200, "text/plain", "Success: " + msg); }
 void MicroServer::error(String msg) { serverWifi.send(200, "text/plain", msg); }
 
+
+//////////////////////
+// Command Handlers //
+//                  //
+//////////////////////
+
 void MicroServer::handleHomeAxis() { mechanical->homeAxis(); }
+
 void MicroServer::handleStopJog() { mechanical->stopJog(); }
 
 void MicroServer::handleMoveAxis() { 
@@ -114,7 +133,7 @@ void MicroServer::handleJogAxis() {
   }else{ error("Error: One or more position arguments are missing!"); }
 }
 
-void MicroServer::handleAyyLmao() { success(); }
+void MicroServer::handleAyyLmao() { success("Ayy LMAO"); }
 
 void MicroServer::handleUnlockAxis() {mechanical->unlockAxis();}
 
@@ -124,4 +143,8 @@ void MicroServer::handleToggle() {
     else if(serverWifi.arg("option") == "false") mechanical->toggle(false);
     else error("Error: Invalid 'option' value!");
   }else{ error("Error: No 'option' value provided!"); }
+}
+
+void MicroServer::handleGetPos() {
+  mechanical->getPos();
 }
