@@ -11,8 +11,7 @@
 
 class MicroServer;
 
-class Mechanical
-{
+class Mechanical {
 
   private:
     MicroServer * microServer; //ADDED - for the observation pattern
@@ -23,7 +22,6 @@ class Mechanical
     Position maxpos;
 
     bool askPos(); //Asks GRBL its position with "?".
-
     //Safely send a command, and expect a response or not.
     bool sendCommand(String command, Status atLeast, Status success, Status failure);
     bool sendCommand(String command, Status atLeast, Status success, Status failure, String *response);
@@ -31,17 +29,27 @@ class Mechanical
     bool receiveLines(String *message);
     //Check if the response from GRBL is ok.
     bool checkSanity(String *message);
-    
     //Wait for a response from GRBL
     void waitResponse(); 
     //flush input serial stream
     void flush();
     //wait for a movement to finish before continuing execution.
     void waitForMove();
-    
     //Change the status
     void setStatus(Status stat);
 
+    String statusToString(Status status) {
+        switch (status) {
+            case OFF: return "Serial connection turned off";
+            case OFFLINE: return "Serial connection establishment timed out!";
+            case ERROR: return "Error when sending the command! (checkSanity error)";
+            case LOCK: return "Axis locked";
+            case MOVING: return "Movement in progress";
+            case OUTDATED: return "Status outdated";
+            case IDLE: return "Action completed";
+            default: return "";
+        }
+    }
 
   public:
     //Instantiation
@@ -63,8 +71,6 @@ class Mechanical
     int getStatus(); //Returns a number corresponding the status.
 
     void addObserver(MicroServer * ms); //ADDED - for the observation pattern
-    void notifyObserver(String notice); //ADDED - for the observation pattern
-
 };
 
 #endif //MECHANICAL_H

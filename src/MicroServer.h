@@ -1,7 +1,3 @@
-/**
- * Project Untitled
- */
-
 #ifndef MICROSERVER_H
 #define MICROSERVER_H
 
@@ -24,8 +20,7 @@ class MicroServer {
 		MicroServer(Mechanical *m);
 		void setUp(String hostname);
 		void run();
-		void success(String msg);
-		void error(String msg);
+		void update(String msg);
 	private: 
 		const char* ap_default_psk = "microspot"; ///< Default PSK.
 		void handleHomeAxis();
@@ -35,7 +30,7 @@ class MicroServer {
 		void handleAyyLmao();
 		void handleUnlockAxis();
 		void handleToggle();
-                void handleGetPos();
+        void handleGetPos();
 		FileManager fileManager;
 		Mechanical *mechanical;
 };

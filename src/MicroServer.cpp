@@ -2,7 +2,6 @@
 #include "Mechanical.h"
 #include <Ticker.h>
 
-//WiFiServer serverWifi(80);
 ESP8266WebServer serverWifi(80);  
 
 ///////////////////////////////////////////////
@@ -17,7 +16,6 @@ Ticker ledBlink;
 void ledFlick(){
   digitalWrite(LEDPIN,!digitalRead(LEDPIN));
 }
-
 
 /**
  * Server implementation
@@ -76,7 +74,6 @@ void MicroServer::setUp(String hostname) {
     WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
   }
 
-
   /////////////////////
   // Server commands //
   /////////////////////
@@ -93,58 +90,44 @@ void MicroServer::setUp(String hostname) {
   serverWifi.begin();
 
   mechanical->toggle(true);
-  
 }
 
 void MicroServer::run() { serverWifi.handleClient(); }
-
 
 //////////////////////
 // Server responses //
 //                  //
 //////////////////////
 
-void MicroServer::success(String msg) { serverWifi.send(200, "text/plain", "Success: " + msg); }
-void MicroServer::error(String msg) { serverWifi.send(200, "text/plain", msg); }
-
+void MicroServer::update(String msg) { serverWifi.send(200, "text/plain", "Success: " + msg); }
 
 //////////////////////
 // Command Handlers //
 //                  //
 //////////////////////
 
+void MicroServer::handleAyyLmao() { update("Ayy LMAO"); }
+void MicroServer::handleUnlockAxis() {mechanical->unlockAxis();}
 void MicroServer::handleHomeAxis() { mechanical->homeAxis(); }
-
 void MicroServer::handleStopJog() { mechanical->stopJog(); }
+void MicroServer::handleGetPos() { mechanical->getPos(); }
 
 void MicroServer::handleMoveAxis() { 
-  if (serverWifi.arg("x") != "" && 
-      serverWifi.arg("y") != "" && 
-      serverWifi.arg("f") != "") { 
+  if (serverWifi.arg("x") != "" && serverWifi.arg("y") != "" && serverWifi.arg("f") != "") { 
     mechanical->moveAxis((String)serverWifi.arg("x"), (String)serverWifi.arg("y"), (String)serverWifi.arg("f"));
-  }else{ error("Error: One or more position arguments are missing!"); }
+  }else{ update("Error: One or more position arguments are missing!"); }
 }
 
 void MicroServer::handleJogAxis() { 
-  if (serverWifi.arg("x") != "" && 
-      serverWifi.arg("y") != "" && 
-      serverWifi.arg("f") != "") { 
+  if (serverWifi.arg("x") != "" && serverWifi.arg("y") != "" && serverWifi.arg("f") != "") { 
     mechanical->jogAxis((String)serverWifi.arg("x"), (String)serverWifi.arg("y"), (String)serverWifi.arg("f"));
-  }else{ error("Error: One or more position arguments are missing!"); }
+  }else{ update("Error: One or more position arguments are missing!"); }
 }
-
-void MicroServer::handleAyyLmao() { success("Ayy LMAO"); }
-
-void MicroServer::handleUnlockAxis() {mechanical->unlockAxis();}
 
 void MicroServer::handleToggle() {
   if (serverWifi.arg("option") !=  "") { 
     if(serverWifi.arg("option") == "true") mechanical->toggle(true);
     else if(serverWifi.arg("option") == "false") mechanical->toggle(false);
-    else error("Error: Invalid 'option' value!");
-  }else{ error("Error: No 'option' value provided!"); }
-}
-
-void MicroServer::handleGetPos() {
-  mechanical->getPos();
+    else update("Error: Invalid 'option' value!");
+  }else{ update("Error: No 'option' value provided!"); }
 }
