@@ -75,8 +75,9 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
   result = sendCommand("G1 X" + X + " Y" + Y + " F" + F,
     MOVING,MOVING,ERROR);
   if(result){
+    flush();
+    waitResponse(); //this locks the whole unit!!
     setStatus(MOVING);
-    waitForMove();
     pos.x = X;
     pos.y = Y;
     setStatus(IDLE);
@@ -105,15 +106,15 @@ void Mechanical::unlockAxis() {
 //Report position
 bool Mechanical::getPos() {
   String notice;
-  if(st == IDLE) { notice = "X: "  + pos.x + " Y: " + pos.y; } 
+  if(st == IDLE) { notice = "X: "  + pos.x + " Y: " + pos.y; }
   else if (askPos()){ notice = "X: "  + pos.x + " Y: " + pos.y; }
   else{ setStatus(ERROR); }
   microServer->update(notice);
 }
 
 //Report config
-bool Mechanical::getConfig(String *config) { 
-  return sendCommand("$$", ERROR, this->st, this->st, config); 
+bool Mechanical::getConfig(String *config) {
+  return sendCommand("$$", ERROR, this->st, this->st, config);
 }
 
 //Returns the number of the current status
@@ -179,13 +180,13 @@ void Mechanical::waitResponse() {
   while(Serial.available() == 0) { delay(100); }
   return;
 }
- 
+
 void Mechanical::flush(){
   while(Serial.available() > 0) Serial.read();//empty buffer.
   return;
 }
 
-void Mechanical::waitForMove() { 
+void Mechanical::waitForMove() {
   flush(); //flush previous messages in buffer.
   Serial.println("G4P0"); //send improvised confirm token.
   waitResponse(); //wait for G4P0's confirm
@@ -195,7 +196,7 @@ void Mechanical::waitForMove() {
 }
 
 //After sending a command, check if GRBL understood well.
-bool Mechanical::checkSanity(String *message) { 
+bool Mechanical::checkSanity(String *message) {
   int len = message->length();
   if(message->substring(len-3,len) == "ok\r\n" && message->substring(len-8,len-4) == "ok\r\n") { //if the two last lines are "ok"
     *message = message->substring(0,len-8); //trim the last two "ok"
