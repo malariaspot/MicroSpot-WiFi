@@ -59,8 +59,9 @@ bool Mechanical::homeAxis() {
   bool result;
   result = sendCommand("$h",LOCK,IDLE,ERROR);
   if(result){
-    setStatus(MOVING);
-    waitForMove();
+    st = MOVING;
+    flush();
+    waitResponse(); //this locks the whole unit!!
     pos.x = "0";
     pos.y = "0";
     setStatus(IDLE);
@@ -75,9 +76,8 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
   result = sendCommand("G1 X" + X + " Y" + Y + " F" + F,
     MOVING,MOVING,ERROR);
   if(result){
-    flush();
-    waitResponse(); //this locks the whole unit!!
-    setStatus(MOVING);
+    st = MOVING;
+    waitForMove();
     pos.x = X;
     pos.y = Y;
     setStatus(IDLE);
@@ -86,12 +86,22 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
 }
 
 //Interruptible movement
-bool Mechanical::jogAxis(String X, String Y, String F) {
-  return sendCommand("$J=G90 X" + X + " Y" + Y + " F" + F, MOVING, OUTDATED, ERROR);
+bool Mechanical::jogAxis(String X, String Y, String F, String R) {
+  String mode;
+  if(R == "true"){
+    mode = "G91";
+  }else{
+    mode = "G90";
+  }
+  setStatus(OUTDATED);
+  return sendCommand("$J=" + mode + " X" + X + " Y" + Y + " F" + F, MOVING, OUTDATED, ERROR);
 }
 
 //stop jogging movement.
-bool Mechanical::stopJog() { return sendCommand("\x85",MOVING,OUTDATED,ERROR); }
+bool Mechanical::stopJog() {
+  setStatus(OUTDATED);
+  return sendCommand("\x85",MOVING,OUTDATED,ERROR);
+}
 
 void Mechanical::unlockAxis() {
   Serial.println("$X");

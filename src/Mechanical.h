@@ -30,7 +30,7 @@ class Mechanical {
     //Check if the response from GRBL is ok.
     bool checkSanity(String *message);
     //Wait for a response from GRBL
-    void waitResponse(); 
+    void waitResponse();
     //flush input serial stream
     void flush();
     //wait for a movement to finish before continuing execution.
@@ -61,7 +61,7 @@ class Mechanical {
     //Movement
     bool homeAxis(); //Take axis to home position.
     bool moveAxis(String X, String Y, String F); //Ininterruptible move to (X,Y) at speed F.
-    bool jogAxis(String X,String Y,String F); //Interruptible move to (X,Y) at speed F.
+    bool jogAxis(String X,String Y,String F, String R); //Interruptible move to (X,Y) at speed F.
     bool stopJog();  //Stop an interruptible movement.
     void unlockAxis(); //Send and unlock token to GRBL. Breaks stability. Devs only.
 
