@@ -86,6 +86,7 @@ void MicroServer::setUp(String hostname) {
   serverWifi.on("/unlockAxis", [this](){handleUnlockAxis();});
   serverWifi.on("/toggle", [this](){handleToggle();});
   serverWifi.on("/getPos", [this](){handleGetPos();});
+  serverWifi.on("/toggleLight",[this](){handleToggleLight();});
 
   serverWifi.begin();
 
@@ -130,4 +131,10 @@ void MicroServer::handleToggle() {
     else if(serverWifi.arg("option") == "false") mechanical->toggle(false);
     else update("Error: Invalid 'option' value!");
   }else{ update("Error: No 'option' value provided!"); }
+}
+
+void MicroServer::handleToggleLight(){
+  if (serverWifi.arg("l") != ""){
+    mechanical->toggleLight(serverWifi.arg("l").toInt());
+  }
 }

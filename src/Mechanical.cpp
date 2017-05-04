@@ -1,6 +1,5 @@
 #include "Mechanical.h"
 #include "MicroServer.h"
-
 #define TIMEOUT 4000
 #define REQUESTLIMIT 200
 #define TICK 100
@@ -106,6 +105,24 @@ bool Mechanical::stopJog() {
 void Mechanical::unlockAxis() {
   Serial.println("$X");
   setStatus(IDLE);
+}
+
+void Mechanical::toggleLight(int intensity){
+  int inputNum;
+  //saturate intensity between 0 and 255.
+  //Not using just min() and max() seems uncanny, 
+  //but issue#398 of the framework reveals that they just don' work.
+  //Until there is a fix, this is what we got to do.
+  if(intensity >= 255){
+    inputNum = 255;
+  }else if(intensity <= 0){
+    inputNum = 0;
+  }else{
+    inputNum = intensity;
+  }
+  String input = String(inputNum);
+  Serial.println("M03 S" + input);
+  microServer->update("Light set to " + input);
 }
 
 ////////////////////

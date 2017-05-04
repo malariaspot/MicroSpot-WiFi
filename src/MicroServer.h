@@ -30,6 +30,7 @@ class MicroServer {
 		void handleAyyLmao();
 		void handleUnlockAxis();
 		void handleToggle();
+                void handleToggleLight();
         void handleGetPos();
 		FileManager fileManager;
 		Mechanical *mechanical;
