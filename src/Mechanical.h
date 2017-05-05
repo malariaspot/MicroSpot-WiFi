@@ -64,6 +64,7 @@ class Mechanical {
     bool jogAxis(String X,String Y,String F, String R); //Interruptible move to (X,Y) at speed F.
     bool stopJog();  //Stop an interruptible movement.
     void unlockAxis(); //Send and unlock token to GRBL. Breaks stability. Devs only.
+    void toggleLight(int intensity); //turn on or off the lights.
 
     //Status reporting
     bool getPos(); //Reports current position.
