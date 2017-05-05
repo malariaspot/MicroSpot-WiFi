@@ -85,15 +85,19 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
 }
 
 //Interruptible movement
-bool Mechanical::jogAxis(String X, String Y, String F, String R) {
+bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
   String mode;
   if(R == "true"){
     mode = "G91";
   }else{
     mode = "G90";
   }
+  String stopping = "";
+  if(S == "true"){
+    stopping = "\x85\r\n";
+  }
   setStatus(OUTDATED);
-  return sendCommand("$J=" + mode + " X" + X + " Y" + Y + " F" + F, MOVING, OUTDATED, ERROR);
+  return sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + " F" + F, MOVING, OUTDATED, ERROR);
 }
 
 //stop jogging movement.

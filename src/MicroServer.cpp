@@ -121,7 +121,8 @@ void MicroServer::handleMoveAxis() {
 
 void MicroServer::handleJogAxis() {
   if (serverWifi.arg("x") != "" && serverWifi.arg("y") != "" && serverWifi.arg("f") != "") {
-    mechanical->jogAxis((String)serverWifi.arg("x"), (String)serverWifi.arg("y"), (String)serverWifi.arg("f"), (String)serverWifi.arg("r"));
+    mechanical->jogAxis((String)serverWifi.arg("x"), (String)serverWifi.arg("y"), (String)serverWifi.arg("f"), 
+      (String)serverWifi.arg("r"), (String)serverWifi.arg("s"));
   }else{ update("Error: One or more position arguments are missing!"); }
 }
 
