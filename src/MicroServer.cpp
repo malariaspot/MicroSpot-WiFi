@@ -136,5 +136,7 @@ void MicroServer::handleToggle() {
 void MicroServer::handleToggleLight(){
   if (serverWifi.arg("l") != ""){
     mechanical->toggleLight(serverWifi.arg("l").toInt());
+  }else{
+    update("Error: No intensity value provided!");
   }
 }
