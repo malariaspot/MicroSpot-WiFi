@@ -45,10 +45,9 @@ class Mechanical {
             case LOCK: return "Axis locked";
             case HOMING: return "Now homing...";
             case MOVING: return "Movement in progress";
-            //TODO update. This was set for compatibility purposed
+            //TODO update. This was set for compatibility purposes
             case JOGGING: return "Movement in progress";
-            case OUTDATED: return "Status outdated";
-            case IDLE: return "Action completed";
+            case IDLE: return "Action completed X: " + pos.x + " Y: " + pos.y;
             default: return "";
         }
     }

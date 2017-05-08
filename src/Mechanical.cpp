@@ -23,13 +23,14 @@ double timeStamp;
 double serialStamp;
 double watchDogStamp;
 bool dogWatching;
+bool posOutdated;
 
 enum MsgType{
-  INFO,
+  POSITION,
   AFFIRMATIVE,
-  ERRONEOUS
+  ERRONEOUS,
+  ALARM
 };
-
 
 /////////////////////
 //                 //
@@ -42,13 +43,15 @@ enum MsgType{
 // Serial input check utilities //
 //////////////////////////////////
 
-MsgType classify(String msg){
+MsgType msgClassify(String msg){
   if(msg.indexOf("ok") != -1){
     return AFFIRMATIVE;
   }else if(msg.indexOf("error") != -1){
     return ERRONEOUS;
+  }else if(msg.indexOf("<") != -1){
+    return POSITION;
   }else{
-    return INFO;
+    return ALARM;
   }
 }
 
@@ -63,7 +66,7 @@ void Mechanical::serialListen(){
       char message[bufferIndex + 1];
       strncpy(message,serialBuffer,bufferIndex);
       String msg = String(message);
-      switch(classify(msg)){
+      switch(msgClassify(msg)){
         case AFFIRMATIVE:
           expected--;
           break;
@@ -71,11 +74,24 @@ void Mechanical::serialListen(){
           expected--;
           //Do something about the error.
           break;
-        case INFO:
+        case POSITION:
           infos --;
-          //Do something about the info.
+          int b,c;
+          b = msg.indexOf(',',11);
+          c = msg.indexOf(',',b + 1);
+          char xBuffer[b - 5];
+          strncpy(xBuffer,&message[6],b - 6);
+          this->pos.x = String(xBuffer);
+          char yBuffer[c - b + 1];
+          strncpy(yBuffer,&message[b + 1], c - b);
+          this->pos.y = String(yBuffer);
+          //this->pos.x = msg.substring(a + 1, b - 1);
+          //this->pos.y = msg.substring(b + 1, c - 1);
+          microServer->update("X: " + pos.x + " Y: " + pos.y);
+          posOutdated = false;
           break;
         default:
+          infos--;
           break;
       }
       if(expected == 0){
@@ -126,6 +142,8 @@ Mechanical::Mechanical(int baud) {
   this->baudios = baud;
   maxpos.x = MAX_X;
   maxpos.y = MAX_Y;
+  pos.x = "";
+  pos.y = "";
   pinMode(ENABLEPIN,OUTPUT);
   expected = 0;
   infos = 0;
@@ -169,6 +187,7 @@ bool Mechanical::homeAxis() {
   expected += 2;
   //this command can take a while to confirm
   microServer->longWait = true;
+  posOutdated = true; //temporary cautionary measure.
   return sendCommand("$h",LOCK,IDLE,ERROR);
 }
 
@@ -177,6 +196,7 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
   expected += 4;
   //this command can take a while to confirm.
   microServer->longWait = true;
+  posOutdated = true; //temporary cautionary measure.
   return sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
    MOVING,IDLE,ERROR);
 }
@@ -194,14 +214,16 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
     stopping = "\x85\r\n";
   }
   expected += 2;
+  posOutdated = true;
   return sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + 
-    " F" + F, MOVING, OUTDATED, ERROR);
+    " F" + F, MOVING, JOGGING, ERROR);
 }
 
 //stop jogging movement.
 bool Mechanical::stopJog() {
   expected += 2;
-  return sendCommand("\x85",MOVING,OUTDATED,ERROR);
+  posOutdated = true;
+  return sendCommand("\x85",MOVING,IDLE,ERROR);
 }
 
 void Mechanical::unlockAxis() {
@@ -237,10 +259,15 @@ void Mechanical::toggleLight(int intensity){
 //Report position
 bool Mechanical::getPos() {
   String notice;
-  if(st == IDLE) { notice = "X: "  + pos.x + " Y: " + pos.y; }
-  else if (askPos()){ notice = "X: "  + pos.x + " Y: " + pos.y; }
-  else{ setStatus(ERROR); }
-  microServer->update(notice);
+  if(posOutdated){
+    askPos();
+  }
+  else
+  {
+    notice = "X: "  + pos.x + " Y: " + pos.y;
+    microServer->update(notice);
+  }
+  return true;
 }
 
 //Returns the number of the current status
@@ -248,20 +275,10 @@ int Mechanical::getStatus() { return this->st; }
 
 //Ask GRBL for position, and update our local variables.
 bool Mechanical::askPos() {
-  bool result;
-  String response;
-  result = sendCommand("?", MOVING, st, ERROR);
-  if(result){
-    int index;
-    if(index = response.indexOf("MPos:") < 0){
-      setStatus(ERROR);
-      return false;
-    }else{
-      pos.x = response.substring(index + 5, index + 10);
-      pos.y = response.substring(index + 12, index + 17);
-      return true;
-    }
-  }else{ return false; }
+  expected += 2;
+  infos += 1;
+  Serial.println("?");
+  return true;
 }
 
 //Change the status of the machine.

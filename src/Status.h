@@ -9,7 +9,6 @@ enum Status{
   HOMING, //GRBL is homing, status petitions are delayed until axes are stopped.
   MOVING, //The motors are moving. This movement cannot be cancelled.
   JOGGING, //GRBL is jogging, The movement can be cancelled.
-  OUTDATED, //The motors may be stopped, but the position reported may not be correct.
   IDLE //GRBL is sitting idle, and the position has been reported by the machine.
 };
 
