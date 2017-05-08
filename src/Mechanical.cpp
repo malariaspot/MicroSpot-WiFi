@@ -78,6 +78,7 @@ void Mechanical::serialListen(){
       }
       if(expected == 0){
         dogWatching = false;
+        microServer->longWait = false;
         setStatus(after.success);
       }
       break;
@@ -163,6 +164,7 @@ bool Mechanical::toggle(bool button) {
 //Home the axes
 bool Mechanical::homeAxis() {
   expected += 2;
+  microServer->longWait = true;
   return sendCommand("$h",LOCK,IDLE,ERROR);
 }
 
