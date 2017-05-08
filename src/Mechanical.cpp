@@ -57,14 +57,6 @@ bool Mechanical::toggle(bool button) {
 bool Mechanical::homeAxis() {
   bool result;
   result = sendCommand("$h",LOCK,IDLE,ERROR);
-  if(result){
-    st = MOVING;
-    flush();
-    waitResponse(); //this locks the whole unit!!
-    pos.x = "0";
-    pos.y = "0";
-    setStatus(IDLE);
-  }else{ setStatus(ERROR); }
   return result;
 }
 
@@ -74,13 +66,7 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
   //String notice;
   result = sendCommand("G1 X" + X + " Y" + Y + " F" + F,
     MOVING,MOVING,ERROR);
-  if(result){
-    st = MOVING;
-    waitForMove();
-    pos.x = X;
-    pos.y = Y;
-    setStatus(IDLE);
-  } else { setStatus(ERROR); }
+  
   return result;
 }
 
@@ -143,11 +129,6 @@ bool Mechanical::getPos() {
   microServer->update(notice);
 }
 
-//Report config
-bool Mechanical::getConfig(String *config) {
-  return sendCommand("$$", ERROR, this->st, this->st, config);
-}
-
 //Returns the number of the current status
 int Mechanical::getStatus() { return this->st; }
 
@@ -155,7 +136,7 @@ int Mechanical::getStatus() { return this->st; }
 bool Mechanical::askPos() {
   bool result;
   String response;
-  result = sendCommand("?", MOVING, st, ERROR, &response);
+  result = sendCommand("?", MOVING, st, ERROR);
   if(result){
     int index;
     if(index = response.indexOf("MPos:") < 0){
@@ -189,58 +170,19 @@ void Mechanical::setStatus(Status stat){
 //Safely send a command, under certain conditions, with certain consequences,
 //and expecting or not, a response that will be stored in a Line list.
 bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
-  return this->sendCommand(command,atLeast,success,failure,NULL);
-}
-
-bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure, String *response) {
   if(st >= atLeast) {
     Serial.println(command);
-    if(response != NULL) {
-      this->receiveLines(response);
-      setStatus(success);
-      return true;
-    }
+    setStatus(success);
+    return true;
   }else{
-    *response = "not enough status";
     return false;
   }
 }
 
-//Wait for GRBL to send a response.
-void Mechanical::waitResponse() {
-  while(Serial.available() == 0) { delay(100); }
-  return;
-}
 
 void Mechanical::flush(){
   while(Serial.available() > 0) Serial.read();//empty buffer.
   return;
-}
-
-void Mechanical::waitForMove() {
-  flush(); //flush previous messages in buffer.
-  Serial.println("G4P0"); //send improvised confirm token.
-  waitResponse(); //wait for G4P0's confirm
-  flush(); //flush the G4P0's confirm.
-  waitResponse(); //wait for the actual confirm.
-  return;
-}
-
-//After sending a command, check if GRBL understood well.
-bool Mechanical::checkSanity(String *message) {
-  int len = message->length();
-  if(message->substring(len-3,len) == "ok\r\n" && message->substring(len-8,len-4) == "ok\r\n") { //if the two last lines are "ok"
-    *message = message->substring(0,len-8); //trim the last two "ok"
-    return true;
-  } else { return false; }
-}
-
-//Receive the lines and put them into a concatenated Line
-//list.
-bool Mechanical::receiveLines(String *message) {
-  if(Serial.available() == 0) { return false; }
-  while(Serial.available() > 0) {*message += Serial.readStringUntil('\n'); }
-  return true;
 }
 
 /////////////////////////////////

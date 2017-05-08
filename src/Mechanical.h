@@ -24,17 +24,8 @@ class Mechanical {
     bool askPos(); //Asks GRBL its position with "?".
     //Safely send a command, and expect a response or not.
     bool sendCommand(String command, Status atLeast, Status success, Status failure);
-    bool sendCommand(String command, Status atLeast, Status success, Status failure, String *response);
-    //Receive lines from GRBL.
-    bool receiveLines(String *message);
-    //Check if the response from GRBL is ok.
-    bool checkSanity(String *message);
-    //Wait for a response from GRBL
-    void waitResponse();
     //flush input serial stream
     void flush();
-    //wait for a movement to finish before continuing execution.
-    void waitForMove();
     //Change the status
     void setStatus(Status stat);
 
@@ -68,7 +59,6 @@ class Mechanical {
 
     //Status reporting
     bool getPos(); //Reports current position.
-    bool getConfig(String *config); //Stores the config lines into Line list "config".
     int getStatus(); //Returns a number corresponding the status.
 
     void addObserver(MicroServer * ms); //ADDED - for the observation pattern
