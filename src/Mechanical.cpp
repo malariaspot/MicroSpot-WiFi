@@ -4,10 +4,104 @@
 #define REQUESTLIMIT 200
 #define TICK 100
 
+/////////////////////////////////////////
+// Internal variables
+/////////////////////////////////////////
+
 #define ENABLEPIN 4
+#define ENDLINE '\n'
+#define BUFFERSIZE 255
+#define SERIAL_FRAMERATE 100
+int bufferIndex;
+char serialBuffer[BUFFERSIZE];
+char inputChar;
+int expected, received, infos;
+
+struct AfterStatus{
+  Status success, failure;
+}after;
+
+
+/////////////////////
+//                 //
+// Private methods //
+//                 //
+/////////////////////
+
+
+//////////////////////////////////
+// Serial input check utilities //
+//////////////////////////////////
+
+bool checkSanity(char * buffer){
+  String message = String(buffer);
+  String line[expected];
+  int a = 0;
+  int b;
+  for(int i = 0; i < expected; i++){
+    b = message.indexOf(ENDLINE,a);
+    line[i] = message.substring(a,b);
+    a = b + 1;
+  }
+  bool ok = true;
+  for(int i = 0; i < expected; i++){
+    ok = ok && (line[i] == "ok\r\n");
+  }
+  return ok;
+}
+
+
+void Mechanical::serialListen(){
+//transmit messages from serial.
+  while(Serial.available() > 0){
+    inputChar = Serial.read();
+    serialBuffer[bufferIndex] = inputChar;
+    bufferIndex++;
+    if(inputChar == ENDLINE){
+      received += 1;
+    }
+    if(received == expected){
+      //set a flag or something to trigger sanityCheck.
+      serialBuffer[bufferIndex] = '\0'; //end of buffer.
+      if(checkSanity(serialBuffer)){
+        setStatus(after.success);
+      }else{
+        setStatus(after.failure);
+      }
+      expected = 0;
+      received = 0;
+      bufferIndex = 0;
+      break;
+
+    }
+  }
+}
+
+//Safely send a command, under certain conditions, with certain consequences,
+//and expecting or not, a response that will be stored in a Line list.
+bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
+  if(st >= atLeast) {
+    after.success = success;
+    after.failure = failure;
+    Serial.println(command);
+    setStatus(success);
+    return true;
+  }else{
+    return false;
+  }
+}
+
+
+void Mechanical::flush(){
+  while(Serial.available() > 0) Serial.read();//empty buffer.
+  return;
+}
+
 
 ////////////////////
+//                //
 // Public methods //
+//                //
 ////////////////////
 
 /////////////////////////////////
@@ -20,6 +114,8 @@ Mechanical::Mechanical(int baud) {
   maxpos.x = MAX_X;
   maxpos.y = MAX_Y;
   pinMode(ENABLEPIN,OUTPUT);
+  expected = 0;
+  infos = 0;
   this->st = OFF;
 }
 
@@ -57,6 +153,7 @@ bool Mechanical::toggle(bool button) {
 bool Mechanical::homeAxis() {
   bool result;
   result = sendCommand("$h",LOCK,IDLE,ERROR);
+  expected += 2;
   return result;
 }
 
@@ -66,7 +163,6 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
   //String notice;
   result = sendCommand("G1 X" + X + " Y" + Y + " F" + F,
     MOVING,MOVING,ERROR);
-  
   return result;
 }
 
@@ -156,37 +252,19 @@ void Mechanical::setStatus(Status stat){
   microServer->update(statusToString(st));
 }
 
-/////////////////////
-//                 //
-// Private methods //
-//                 //
-/////////////////////
-
-
-//////////////////////////////////
-// Serial input check utilities //
-//////////////////////////////////
-
-//Safely send a command, under certain conditions, with certain consequences,
-//and expecting or not, a response that will be stored in a Line list.
-bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
-  if(st >= atLeast) {
-    Serial.println(command);
-    setStatus(success);
-    return true;
-  }else{
-    return false;
+void Mechanical::run(){
+  if(expected && (millis() - timeStamp > SERIAL_FRAMERATE)){
+    this->serialListen();
+    timeStamp = millis();
   }
 }
 
-
-void Mechanical::flush(){
-  while(Serial.available() > 0) Serial.read();//empty buffer.
-  return;
-}
 
 /////////////////////////////////
 // Server notifying tools      //
 /////////////////////////////////
 
 void Mechanical::addObserver(MicroServer * ms) { microServer = ms; }
+
+
+

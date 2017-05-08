@@ -93,7 +93,9 @@ void MicroServer::setUp(String hostname) {
   mechanical->toggle(true);
 }
 
-void MicroServer::run() { serverWifi.handleClient(); }
+void MicroServer::run() {
+  serverWifi.handleClient();
+}
 
 //////////////////////
 // Server responses //

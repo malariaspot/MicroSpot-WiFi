@@ -21,13 +21,16 @@ class Mechanical {
     Position pos;
     Position maxpos;
 
-    bool askPos(); //Asks GRBL its position with "?".
+    //Asks GRBL its position with "?".
+    bool askPos();
     //Safely send a command, and expect a response or not.
     bool sendCommand(String command, Status atLeast, Status success, Status failure);
     //flush input serial stream
     void flush();
     //Change the status
     void setStatus(Status stat);
+    //loop for checking the serial
+    void serialListen();
 
     String statusToString(Status status) {
         switch (status) {
@@ -62,6 +65,7 @@ class Mechanical {
     int getStatus(); //Returns a number corresponding the status.
 
     void addObserver(MicroServer * ms); //ADDED - for the observation pattern
+    void run(); //loop function to access scheduling features.
 };
 
 #endif //MECHANICAL_H
