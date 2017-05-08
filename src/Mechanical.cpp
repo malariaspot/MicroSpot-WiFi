@@ -4,7 +4,7 @@
 #define TIMEOUT 4000
 #define REQUESTLIMIT 200
 #define TICK 100
-#define WATCHDOG_LIMIT 10000
+#define WATCHDOG_LIMIT 20000
 
 /////////////////////////////////////////
 // Internal variables
@@ -68,10 +68,12 @@ void Mechanical::serialListen(){
           expected--;
           break;
         case ERRONEOUS:
-          setStatus(after.failure);
+          expected--;
+          //Do something about the error.
           break;
         case INFO:
-          expected --;
+          infos --;
+          //Do something about the info.
           break;
         default:
           break;
@@ -79,6 +81,7 @@ void Mechanical::serialListen(){
       if(expected == 0){
         dogWatching = false;
         microServer->longWait = false;
+        infos = 0;
         setStatus(after.success);
       }
       break;
@@ -146,7 +149,7 @@ bool Mechanical::toggle(bool button) {
       }
     }
     setStatus(LOCK);
-    flush();
+    infos += 2;
     return true;
   }else{
     Serial.end();
@@ -164,15 +167,18 @@ bool Mechanical::toggle(bool button) {
 //Home the axes
 bool Mechanical::homeAxis() {
   expected += 2;
+  //this command can take a while to confirm
   microServer->longWait = true;
   return sendCommand("$h",LOCK,IDLE,ERROR);
 }
 
 //Uninterruptible movement
 bool Mechanical::moveAxis(String X, String Y, String F) {
-  expected += 2;
-  return sendCommand("G1 X" + X + " Y" + Y + " F" + F,
-   MOVING,MOVING,ERROR);
+  expected += 4;
+  //this command can take a while to confirm.
+  microServer->longWait = true;
+  return sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
+   MOVING,IDLE,ERROR);
 }
 
 //Interruptible movement
@@ -187,19 +193,21 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
   if(S == "true"){
     stopping = "\x85\r\n";
   }
-  setStatus(OUTDATED);
-  return sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + " F" + F, MOVING, OUTDATED, ERROR);
+  expected += 2;
+  return sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + 
+    " F" + F, MOVING, OUTDATED, ERROR);
 }
 
 //stop jogging movement.
 bool Mechanical::stopJog() {
-  setStatus(OUTDATED);
+  expected += 2;
   return sendCommand("\x85",MOVING,OUTDATED,ERROR);
 }
 
 void Mechanical::unlockAxis() {
-  Serial.println("$X");
-  setStatus(IDLE);
+  expected += 2;
+  infos += 1;
+  sendCommand("$x",LOCK,IDLE,ERROR);
 }
 
 void Mechanical::toggleLight(int intensity){
@@ -217,6 +225,7 @@ void Mechanical::toggleLight(int intensity){
   }
   String input = String(inputNum);
   Serial.println("M03 S" + input);
+  flush();
   microServer->update("Light set to " + input);
 }
 
@@ -269,7 +278,10 @@ void Mechanical::run(){
   if(dogWatching && (millis() - watchDogStamp > WATCHDOG_LIMIT)){
     microServer->update("WATCHDOG ERROR. Expected = " 
       + String(expected));
-    dogWatching = false;
+    dogWatching = false; //turn off watchdog
+    microServer->longWait = false; //unlock MicroServer
+    expected = 0;
+    infos = 0;
   }
 }
 
