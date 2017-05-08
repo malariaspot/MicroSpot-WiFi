@@ -24,6 +24,8 @@ double serialStamp;
 double watchDogStamp;
 bool dogWatching;
 bool posOutdated;
+char xBuffer[7];
+char yBuffer[7];
 
 enum MsgType{
   POSITION,
@@ -55,6 +57,18 @@ MsgType msgClassify(String msg){
   }
 }
 
+int getCharIndex(int from, char * buffer,char control){
+  if(buffer[from] == control){
+    return from;
+  }else{
+    return getCharIndex(from + 1, buffer, control);
+  }
+}
+
+int getCharIndex(char * buffer, char control){
+  return getCharIndex(0,buffer,control);
+}
+
 
 void Mechanical::serialListen(){
 //transmit messages from serial.
@@ -77,17 +91,14 @@ void Mechanical::serialListen(){
         case POSITION:
           infos --;
           int b,c;
-          b = msg.indexOf(',',11);
-          c = msg.indexOf(',',b + 1);
-          char xBuffer[b - 5];
-          strncpy(xBuffer,&message[6],b - 6);
-          this->pos.x = String(xBuffer);
-          char yBuffer[c - b + 1];
-          strncpy(yBuffer,&message[b + 1], c - b);
-          this->pos.y = String(yBuffer);
-          //this->pos.x = msg.substring(a + 1, b - 1);
-          //this->pos.y = msg.substring(b + 1, c - 1);
-          microServer->update("X: " + pos.x + " Y: " + pos.y);
+          b = 0;
+          c = 0;
+          b = getCharIndex(11,message,','); //msg.indexOf(',',11);
+          c = getCharIndex(b + 1,message,',');// msg.indexOf(',',b + 1);
+          //strncpy(xBuffer,message + 6,b - 6); GUILTY OF SIGSEGV
+          this->pos.x = String(b);
+          //strncpy(yBuffer,message + b + 1, c - b); GUILTY OF SIGSEGV
+          this->pos.y = String(c);
           posOutdated = false;
           break;
         default:
