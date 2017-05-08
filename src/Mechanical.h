@@ -23,7 +23,7 @@ class Mechanical {
     struct AfterStatus{
       Status success, failure;
     }after;
-
+    
 
     bool checkSanity(char * buffer);
     //Asks GRBL its position with "?".

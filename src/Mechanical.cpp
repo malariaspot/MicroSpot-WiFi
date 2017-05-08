@@ -1,23 +1,34 @@
 #include "Mechanical.h"
 #include "MicroServer.h"
+
 #define TIMEOUT 4000
 #define REQUESTLIMIT 200
 #define TICK 100
+#define WATCHDOG_LIMIT 10000
 
 /////////////////////////////////////////
 // Internal variables
 /////////////////////////////////////////
 
 #define ENABLEPIN 4
-#define ENDLINE '\n'
-#define BUFFERSIZE 255
-#define SERIAL_FRAMERATE 200
+#define ENDLINE '\r'
+#define BUFFERSIZE 512
+#define SERIAL_FRAMERATE 50
+
 int bufferIndex;
 char serialBuffer[BUFFERSIZE];
 char inputChar;
-int expected, received, infos;
+int expected, infos;
 double timeStamp;
 double serialStamp;
+double watchDogStamp;
+bool dogWatching;
+
+enum MsgType{
+  INFO,
+  AFFIRMATIVE,
+  ERRONEOUS
+};
 
 
 /////////////////////
@@ -31,21 +42,14 @@ double serialStamp;
 // Serial input check utilities //
 //////////////////////////////////
 
-bool Mechanical::checkSanity(char * buffer){
-  String message = String(buffer);
-  String line[expected];
-  int a = 0;
-  int b;
-  for(int i = 0; i < expected; i++){
-    b = message.indexOf(ENDLINE,a);
-    line[i] = message.substring(a,b);
-    a = b + 1;
+MsgType classify(String msg){
+  if(msg.indexOf("ok") != -1){
+    return AFFIRMATIVE;
+  }else if(msg.indexOf("error") != -1){
+    return ERRONEOUS;
+  }else{
+    return INFO;
   }
-  bool ok = true;
-  for(int i = 0; i < expected; i++){
-    ok = ok && (line[i] == "ok\r\n");
-  }
-  return ok;
 }
 
 
@@ -56,8 +60,26 @@ void Mechanical::serialListen(){
     serialBuffer[bufferIndex] = inputChar;
     bufferIndex++;
     if(inputChar == ENDLINE){
-      microServer->update("HE ENCONTRAO ALGO VIVA!!! !DAME UNA GALLETA");
-      received++;
+      char message[bufferIndex + 1];
+      strncpy(message,serialBuffer,bufferIndex);
+      String msg = String(message);
+      switch(classify(msg)){
+        case AFFIRMATIVE:
+          expected--;
+          break;
+        case ERRONEOUS:
+          setStatus(after.failure);
+          break;
+        case INFO:
+          expected --;
+          break;
+        default:
+          break;
+      }
+      if(expected == 0){
+        dogWatching = false;
+        setStatus(after.success);
+      }
       break;
     }
   }
@@ -69,6 +91,8 @@ bool Mechanical::sendCommand(String command, Status atLeast, Status success, Sta
   if(st >= atLeast) {
     this->after.success = success;
     this->after.failure = failure;
+    watchDogStamp = millis();
+    dogWatching = true;
     Serial.println(command);
     return true;
   }else{
@@ -100,10 +124,10 @@ Mechanical::Mechanical(int baud) {
   maxpos.y = MAX_Y;
   pinMode(ENABLEPIN,OUTPUT);
   expected = 0;
-  received = 0;
   infos = 0;
   this->st = OFF;
-  serialStamp = 0;
+  serialStamp = millis();
+  dogWatching = false;
 }
 
 //Activate and deactivate serial connection.
@@ -144,11 +168,9 @@ bool Mechanical::homeAxis() {
 
 //Uninterruptible movement
 bool Mechanical::moveAxis(String X, String Y, String F) {
-  bool result;
-  //String notice;
-  result = sendCommand("G1 X" + X + " Y" + Y + " F" + F,
-    MOVING,MOVING,ERROR);
-  return result;
+  expected += 2;
+  return sendCommand("G1 X" + X + " Y" + Y + " F" + F,
+   MOVING,MOVING,ERROR);
 }
 
 //Interruptible movement
@@ -242,16 +264,10 @@ void Mechanical::run(){
     this->serialListen();
     serialStamp = millis();
   }
-  if(received == expected){
-    serialBuffer[bufferIndex] = '\0'; //end of buffer.
-    if(checkSanity(serialBuffer)){
-      setStatus(after.success);
-    }else{
-      setStatus(after.failure);
-    }
-    expected = 0;
-    received = 0;
-    bufferIndex = 0;
+  if(dogWatching && (millis() - watchDogStamp > WATCHDOG_LIMIT)){
+    microServer->update("WATCHDOG ERROR. Expected = " 
+      + String(expected));
+    dogWatching = false;
   }
 }
 
