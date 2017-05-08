@@ -11,15 +11,13 @@
 #define ENABLEPIN 4
 #define ENDLINE '\n'
 #define BUFFERSIZE 255
-#define SERIAL_FRAMERATE 100
+#define SERIAL_FRAMERATE 200
 int bufferIndex;
 char serialBuffer[BUFFERSIZE];
 char inputChar;
 int expected, received, infos;
-
-struct AfterStatus{
-  Status success, failure;
-}after;
+double timeStamp;
+double serialStamp;
 
 
 /////////////////////
@@ -33,7 +31,7 @@ struct AfterStatus{
 // Serial input check utilities //
 //////////////////////////////////
 
-bool checkSanity(char * buffer){
+bool Mechanical::checkSanity(char * buffer){
   String message = String(buffer);
   String line[expected];
   int a = 0;
@@ -58,21 +56,9 @@ void Mechanical::serialListen(){
     serialBuffer[bufferIndex] = inputChar;
     bufferIndex++;
     if(inputChar == ENDLINE){
-      received += 1;
-    }
-    if(received == expected){
-      //set a flag or something to trigger sanityCheck.
-      serialBuffer[bufferIndex] = '\0'; //end of buffer.
-      if(checkSanity(serialBuffer)){
-        setStatus(after.success);
-      }else{
-        setStatus(after.failure);
-      }
-      expected = 0;
-      received = 0;
-      bufferIndex = 0;
+      microServer->update("HE ENCONTRAO ALGO VIVA!!! !DAME UNA GALLETA");
+      received++;
       break;
-
     }
   }
 }
@@ -81,10 +67,9 @@ void Mechanical::serialListen(){
 //and expecting or not, a response that will be stored in a Line list.
 bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
   if(st >= atLeast) {
-    after.success = success;
-    after.failure = failure;
+    this->after.success = success;
+    this->after.failure = failure;
     Serial.println(command);
-    setStatus(success);
     return true;
   }else{
     return false;
@@ -115,8 +100,10 @@ Mechanical::Mechanical(int baud) {
   maxpos.y = MAX_Y;
   pinMode(ENABLEPIN,OUTPUT);
   expected = 0;
+  received = 0;
   infos = 0;
   this->st = OFF;
+  serialStamp = 0;
 }
 
 //Activate and deactivate serial connection.
@@ -151,10 +138,8 @@ bool Mechanical::toggle(bool button) {
 
 //Home the axes
 bool Mechanical::homeAxis() {
-  bool result;
-  result = sendCommand("$h",LOCK,IDLE,ERROR);
   expected += 2;
-  return result;
+  return sendCommand("$h",LOCK,IDLE,ERROR);
 }
 
 //Uninterruptible movement
@@ -253,9 +238,20 @@ void Mechanical::setStatus(Status stat){
 }
 
 void Mechanical::run(){
-  if(expected && (millis() - timeStamp > SERIAL_FRAMERATE)){
+  if((expected != 0) && (millis() - serialStamp > SERIAL_FRAMERATE)){
     this->serialListen();
-    timeStamp = millis();
+    serialStamp = millis();
+  }
+  if(received == expected){
+    serialBuffer[bufferIndex] = '\0'; //end of buffer.
+    if(checkSanity(serialBuffer)){
+      setStatus(after.success);
+    }else{
+      setStatus(after.failure);
+    }
+    expected = 0;
+    received = 0;
+    bufferIndex = 0;
   }
 }
 

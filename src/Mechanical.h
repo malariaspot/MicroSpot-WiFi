@@ -16,11 +16,16 @@ class Mechanical {
   private:
     MicroServer * microServer; //ADDED - for the observation pattern
     int baudios;
-    double timeStamp;
     Status st = OFF;
     Position pos;
     Position maxpos;
+    
+    struct AfterStatus{
+      Status success, failure;
+    }after;
 
+
+    bool checkSanity(char * buffer);
     //Asks GRBL its position with "?".
     bool askPos();
     //Safely send a command, and expect a response or not.
@@ -38,7 +43,10 @@ class Mechanical {
             case OFFLINE: return "Serial connection establishment timed out!";
             case ERROR: return "Error when sending the command! (checkSanity error)";
             case LOCK: return "Axis locked";
+            case HOMING: return "Now homing...";
             case MOVING: return "Movement in progress";
+            //TODO update. This was set for compatibility purposed
+            case JOGGING: return "Movement in progress";
             case OUTDATED: return "Status outdated";
             case IDLE: return "Action completed";
             default: return "";
