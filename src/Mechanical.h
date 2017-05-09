@@ -19,6 +19,7 @@ class Mechanical {
     Status st = OFF;
     Position pos;
     Position maxpos;
+
     
     struct AfterStatus{
       Status success, failure;
@@ -55,6 +56,10 @@ class Mechanical {
   public:
     //Instantiation
     Mechanical(int baud); //Instantiate the object and choose baudrate.
+
+    //when true, the mechanical stage is making a movement that may
+    //take a while to confirm. (homing and moves)
+    bool longWait;
 
     //Serial activation and release
     bool toggle(bool state); //Turn on or off the serial interface

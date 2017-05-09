@@ -45,29 +45,44 @@ enum MsgType{
 // Serial input check utilities //
 //////////////////////////////////
 
-MsgType msgClassify(String msg){
-  if(msg.indexOf("ok") != -1){
+int getCharIndex(int from, char * buffer, const char * control){
+  if(*control == '\0'){
+    return from;
+  }else{
+    if(*(buffer + from) == '\0'){
+      return -1;
+    }else{
+      if(*(buffer + from) == *control){
+        int last = getCharIndex(from, buffer + 1, control + 1);
+        if(last < 0){
+          return getCharIndex(from + 1, buffer, control);
+        }else{
+          return last;
+        }
+      }else{
+        return getCharIndex(from + 1, buffer, control);
+      }
+    }
+  }
+}
+
+int getCharIndex(char * buffer, const char * control){
+  return getCharIndex(0,buffer,control);
+}
+
+
+MsgType msgClassify(int from, char * msg){
+  if(getCharIndex(from, msg, "ok") >= 0){
     return AFFIRMATIVE;
-  }else if(msg.indexOf("error") != -1){
+  }else if(getCharIndex(from, msg, "error") >= 0){
     return ERRONEOUS;
-  }else if(msg.indexOf("<") != -1){
+  }else if(getCharIndex(from, msg,"<") >= 0){
     return POSITION;
   }else{
     return ALARM;
   }
 }
 
-int getCharIndex(int from, char * buffer,char control){
-  if(buffer[from] == control){
-    return from;
-  }else{
-    return getCharIndex(from + 1, buffer, control);
-  }
-}
-
-int getCharIndex(char * buffer, char control){
-  return getCharIndex(0,buffer,control);
-}
 
 
 void Mechanical::serialListen(){
@@ -77,38 +92,31 @@ void Mechanical::serialListen(){
     serialBuffer[bufferIndex] = inputChar;
     bufferIndex++;
     if(inputChar == ENDLINE){
-      char message[bufferIndex + 1];
-      strncpy(message,serialBuffer,bufferIndex);
-      String msg = String(message);
-      switch(msgClassify(msg)){
+      serialBuffer[bufferIndex] = '\0';
+      bufferIndex = 0;
+      switch(msgClassify(0, serialBuffer)){
         case AFFIRMATIVE:
           expected--;
           break;
         case ERRONEOUS:
           expected--;
-          //Do something about the error.
+          //TODO - Do something about the error.
           break;
         case POSITION:
           infos --;
-          int b,c;
-          b = 0;
-          c = 0;
-          b = getCharIndex(11,message,','); //msg.indexOf(',',11);
-          c = getCharIndex(b + 1,message,',');// msg.indexOf(',',b + 1);
-          //strncpy(xBuffer,message + 6,b - 6); GUILTY OF SIGSEGV
-          this->pos.x = String(b);
-          //strncpy(yBuffer,message + b + 1, c - b); GUILTY OF SIGSEGV
-          this->pos.y = String(c);
-          posOutdated = false;
+          
           break;
         default:
-          infos--;
+          microServer->update("WRONG RESPONSE: " + String(serialBuffer));
           break;
       }
-      if(expected == 0){
+      if(expected <= 0){
         dogWatching = false;
-        microServer->longWait = false;
+        longWait = false;
         infos = 0;
+        bufferIndex = 0;
+        flush();
+        expected = 0;
         setStatus(after.success);
       }
       break;
@@ -158,6 +166,7 @@ Mechanical::Mechanical(int baud) {
   pinMode(ENABLEPIN,OUTPUT);
   expected = 0;
   infos = 0;
+  longWait = false;
   this->st = OFF;
   serialStamp = millis();
   dogWatching = false;
@@ -197,7 +206,7 @@ bool Mechanical::toggle(bool button) {
 bool Mechanical::homeAxis() {
   expected += 2;
   //this command can take a while to confirm
-  microServer->longWait = true;
+  longWait = true;
   posOutdated = true; //temporary cautionary measure.
   return sendCommand("$h",LOCK,IDLE,ERROR);
 }
@@ -206,7 +215,7 @@ bool Mechanical::homeAxis() {
 bool Mechanical::moveAxis(String X, String Y, String F) {
   expected += 4;
   //this command can take a while to confirm.
-  microServer->longWait = true;
+  longWait = true;
   posOutdated = true; //temporary cautionary measure.
   return sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
    MOVING,IDLE,ERROR);
@@ -307,7 +316,7 @@ void Mechanical::run(){
     microServer->update("WATCHDOG ERROR. Expected = " 
       + String(expected));
     dogWatching = false; //turn off watchdog
-    microServer->longWait = false; //unlock MicroServer
+    longWait = false; //unlock MicroServer
     expected = 0;
     infos = 0;
   }

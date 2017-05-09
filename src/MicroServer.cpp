@@ -22,7 +22,6 @@ void ledFlick(){
  */
 
 MicroServer::MicroServer(Mechanical *m) {
-  longWait = false;
   mechanical = m;
   mechanical->addObserver(this);
 }
@@ -95,7 +94,7 @@ void MicroServer::setUp(String hostname) {
 }
 
 void MicroServer::run() {
-  if(!longWait) serverWifi.handleClient();
+  if(!mechanical->longWait) serverWifi.handleClient();
   mechanical->run();
 }
 

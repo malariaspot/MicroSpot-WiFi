@@ -17,7 +17,6 @@ class Mechanical;
 class MicroServer {
 
 	public: 
-                bool longWait;
 		MicroServer(Mechanical *m);
 		void setUp(String hostname);
 		void run();
