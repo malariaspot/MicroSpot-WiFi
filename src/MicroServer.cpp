@@ -78,6 +78,7 @@ void MicroServer::setUp(String hostname) {
   // Server commands //
   /////////////////////
 
+  serverWifi.on("/client", [this](){ handleClient();});
   serverWifi.on("/homeAxis", [this](){ handleHomeAxis();});
   serverWifi.on("/moveAxis", [this](){ handleMoveAxis();});
   serverWifi.on("/jogAxis", [this](){ handleJogAxis();});
@@ -107,6 +108,7 @@ void MicroServer::update(String msg) { serverWifi.send(200, "application/json", 
 //                  //
 //////////////////////
 
+void MicroServer::handleClient() { update(serverWifi.client().remoteIP().toString()); }
 void MicroServer::handleAyyLmao() { update("Ayy LMAO"); }
 void MicroServer::handleUnlockAxis() {mechanical->unlockAxis();}
 void MicroServer::handleHomeAxis() { mechanical->homeAxis(); }
@@ -135,7 +137,7 @@ void MicroServer::handleToggle() {
 }
 
 void MicroServer::handleToggleLight(){
-  if (serverWifi.arg("l") != ""){
+  if (serverWifi.arg("l") != "") {
     mechanical->toggleLight(serverWifi.arg("l").toInt());
   }else{
     update("Error: No intensity value provided!");
