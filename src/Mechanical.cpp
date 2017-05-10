@@ -103,7 +103,15 @@ void Mechanical::serialListen(){
           break;
         case POSITION:
           infos --;
-          
+          int a, b, c, d;
+          a = getCharIndex(lastIndex, serialBuffer, ":");
+          b = getCharIndex(a + 1, serialBuffer, ",");
+          c = getCharIndex(b + 1, serialBuffer, ",");
+          d = getCharIndex(c + 1, serialBuffer, ",");
+          strncpy(xBuffer, serialBuffer + a + 1, b - a -1);
+          strncpy(yBuffer, serialBuffer + b + 1, c - b -1);
+          pos.x = String(xBuffer);
+          pos.y = String(yBuffer);
           break;
         default:
           microServer->update("WRONG RESPONSE: " + String(serialBuffer));
