@@ -27,8 +27,6 @@
 Mechanical mechanical(115200);
 MicroServer microServer(&mechanical);
 
-
-
 ///////////////////////////////////////////////
 // Arduino Setup
 //
