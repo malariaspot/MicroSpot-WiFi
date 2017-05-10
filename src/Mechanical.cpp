@@ -13,9 +13,9 @@
 #define ENABLEPIN 4
 #define ENDLINE '\r'
 #define BUFFERSIZE 512
-#define SERIAL_FRAMERATE 50
+#define SERIAL_FRAMERATE 25
 
-int bufferIndex;
+int bufferIndex, lastIndex;
 char serialBuffer[BUFFERSIZE];
 char inputChar;
 int expected, infos;
@@ -93,8 +93,7 @@ void Mechanical::serialListen(){
     bufferIndex++;
     if(inputChar == ENDLINE){
       serialBuffer[bufferIndex] = '\0';
-      bufferIndex = 0;
-      switch(msgClassify(0, serialBuffer)){
+      switch(msgClassify(lastIndex, serialBuffer)){
         case AFFIRMATIVE:
           expected--;
           break;
@@ -110,11 +109,13 @@ void Mechanical::serialListen(){
           microServer->update("WRONG RESPONSE: " + String(serialBuffer));
           break;
       }
+      lastIndex = bufferIndex;
       if(expected <= 0){
         dogWatching = false;
         longWait = false;
         infos = 0;
         bufferIndex = 0;
+        lastIndex = 0;
         flush();
         expected = 0;
         setStatus(after.success);
@@ -165,6 +166,8 @@ Mechanical::Mechanical(int baud) {
   pos.y = "";
   pinMode(ENABLEPIN,OUTPUT);
   expected = 0;
+  bufferIndex = 0;
+  lastIndex = 0;
   infos = 0;
   longWait = false;
   this->st = OFF;
@@ -317,8 +320,11 @@ void Mechanical::run(){
       + String(expected));
     dogWatching = false; //turn off watchdog
     longWait = false; //unlock MicroServer
+    bufferIndex = 0;
+    lastIndex = 0;
     expected = 0;
     infos = 0;
+    flush();
   }
 }
 
