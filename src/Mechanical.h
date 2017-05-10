@@ -21,20 +21,23 @@ class Mechanical {
     Position pos;
     Position maxpos;
 
-    bool askPos(); //Asks GRBL its position with "?".
+    String inputString;         // a string to hold incoming data
+    bool stringComplete;  // whether the string is complete
+
+    //bool askPos(); //Asks GRBL its position with "?".
     //Safely send a command, and expect a response or not.
-    bool sendCommand(String command, Status atLeast, Status success, Status failure);
-    bool sendCommand(String command, Status atLeast, Status success, Status failure, String *response);
+    //bool sendCommand(String command, Status atLeast, Status success, Status failure);
+    //bool sendCommand(String command, Status atLeast, Status success, Status failure, String *response);
     //Receive lines from GRBL.
-    bool receiveLines(String *message);
+    //bool receiveLines(String *message);
     //Check if the response from GRBL is ok.
-    bool checkSanity(String *message);
+    //bool checkSanity(String *message);
     //Wait for a response from GRBL
-    void waitResponse();
+    //void waitResponse();
     //flush input serial stream
-    void flush();
+    //void flush();
     //wait for a movement to finish before continuing execution.
-    void waitForMove();
+    //void waitForMove();
     //Change the status
     void setStatus(Status stat);
 
@@ -54,21 +57,24 @@ class Mechanical {
   public:
     //Instantiation
     Mechanical(int baud); //Instantiate the object and choose baudrate.
+    void setUp();
+
+    void handleSerial();
 
     //Serial activation and release
-    bool toggle(bool state); //Turn on or off the serial interface
+    void toggle(bool state); //Turn on or off the serial interface
 
     //Movement
-    bool homeAxis(); //Take axis to home position.
-    bool moveAxis(String X, String Y, String F); //Ininterruptible move to (X,Y) at speed F.
-    bool jogAxis(String X,String Y,String F, String R, String s); //Interruptible move to (X,Y) at speed F.
-    bool stopJog();  //Stop an interruptible movement.
+    void homeAxis(); //Take axis to home position.
+    void moveAxis(String X, String Y, String F); //Ininterruptible move to (X,Y) at speed F.
+    void jogAxis(String X,String Y,String F, String R, String s); //Interruptible move to (X,Y) at speed F.
+    void stopJog();  //Stop an interruptible movement.
     void unlockAxis(); //Send and unlock token to GRBL. Breaks stability. Devs only.
     void toggleLight(int intensity); //turn on or off the lights.
 
     //Status reporting
-    bool getPos(); //Reports current position.
-    bool getConfig(String *config); //Stores the config lines into Line list "config".
+    //bool getPos(); //Reports current position.
+    //bool getConfig(String *config); //Stores the config lines into Line list "config".
     int getStatus(); //Returns a number corresponding the status.
 
     void addObserver(MicroServer * ms); //ADDED - for the observation pattern

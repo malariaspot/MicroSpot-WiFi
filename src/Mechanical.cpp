@@ -21,11 +21,32 @@ Mechanical::Mechanical(int baud) {
   maxpos.y = MAX_Y;
   pinMode(ENABLEPIN,OUTPUT);
   this->st = OFF;
+  this->inputString = "";
+  this->stringComplete = false;
+}
+
+void Mechanical::setUp() {
+  inputString.reserve(200);
+  Serial.begin(this->baudios);
+}
+
+void Mechanical::handleSerial() {
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    // add it to the inputString:
+    this->inputString += inChar;
+    // if the incoming character is a newline, set a flag
+    // so the main loop can do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
+  }
 }
 
 //Activate and deactivate serial connection.
-bool Mechanical::toggle(bool button) {
-  if(button) {
+void Mechanical::toggle(bool button) {
+  /*if(button) {
     digitalWrite(ENABLEPIN,LOW);
     delay(TICK); //delay cautelar time before starting the communication.
     Serial.begin(this->baudios);
@@ -45,7 +66,7 @@ bool Mechanical::toggle(bool button) {
     digitalWrite(ENABLEPIN,HIGH);
     setStatus(OFF);
     return false;
-  }
+  }*/
 }
 
 //////////////////////////
@@ -54,8 +75,8 @@ bool Mechanical::toggle(bool button) {
 //////////////////////////
 
 //Home the axes
-bool Mechanical::homeAxis() {
-  bool result;
+void Mechanical::homeAxis() {
+  /*bool result;
   result = sendCommand("$h",LOCK,IDLE,ERROR);
   if(result){
     st = MOVING;
@@ -65,12 +86,21 @@ bool Mechanical::homeAxis() {
     pos.y = "0";
     setStatus(IDLE);
   }else{ setStatus(ERROR); }
-  return result;
+  return result;*/
+
+  Serial.println("$h");
+
+  if (stringComplete) {
+    microServer->update(inputString);
+    // clear the string:
+    this->inputString = "";
+    stringComplete = false;
+  }
 }
 
 //Uninterruptible movement
-bool Mechanical::moveAxis(String X, String Y, String F) {
-  bool result;
+void Mechanical::moveAxis(String X, String Y, String F) {
+  /*bool result;
   //String notice;
   result = sendCommand("G1 X" + X + " Y" + Y + " F" + F,
     MOVING,MOVING,ERROR);
@@ -81,12 +111,12 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
     pos.y = Y;
     setStatus(IDLE);
   } else { setStatus(ERROR); }
-  return result;
+  return result;*/
 }
 
 //Interruptible movement
-bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
-  String mode;
+void Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
+  /*String mode;
   if(R == "true"){
     mode = "G91";
   }else{
@@ -97,13 +127,13 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
     stopping = "\x85\r\n";
   }
   setStatus(OUTDATED);
-  return sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + " F" + F, MOVING, OUTDATED, ERROR);
+  return sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + " F" + F, MOVING, OUTDATED, ERROR);*/
 }
 
 //stop jogging movement.
-bool Mechanical::stopJog() {
+void Mechanical::stopJog() {
   setStatus(OUTDATED);
-  return sendCommand("\x85",MOVING,OUTDATED,ERROR);
+  //return sendCommand("\x85",MOVING,OUTDATED,ERROR);
 }
 
 void Mechanical::unlockAxis() {
@@ -112,7 +142,7 @@ void Mechanical::unlockAxis() {
 }
 
 void Mechanical::toggleLight(int intensity){
-  int inputNum;
+  /*int inputNum;
   //saturate intensity between 0 and 255.
   //Not using just min() and max() seems uncanny, 
   //but issue#398 of the framework reveals that they just don' work.
@@ -126,7 +156,7 @@ void Mechanical::toggleLight(int intensity){
   }
   String input = String(inputNum);
   Serial.println("M03 S" + input);
-  microServer->update("Light set to " + input);
+  microServer->update("Light set to " + input);*/
 }
 
 ////////////////////
@@ -135,7 +165,7 @@ void Mechanical::toggleLight(int intensity){
 ////////////////////
 
 //Report position
-bool Mechanical::getPos() {
+/*bool Mechanical::getPos() {
   String notice;
   if(st == IDLE) { notice = "X: "  + pos.x + " Y: " + pos.y; }
   else if (askPos()){ notice = "X: "  + pos.x + " Y: " + pos.y; }
@@ -146,13 +176,13 @@ bool Mechanical::getPos() {
 //Report config
 bool Mechanical::getConfig(String *config) {
   return sendCommand("$$", ERROR, this->st, this->st, config);
-}
+}*/
 
 //Returns the number of the current status
 int Mechanical::getStatus() { return this->st; }
 
 //Ask GRBL for position, and update our local variables.
-bool Mechanical::askPos() {
+/*bool Mechanical::askPos() {
   bool result;
   String response;
   result = sendCommand("?", MOVING, st, ERROR, &response);
@@ -167,7 +197,7 @@ bool Mechanical::askPos() {
       return true;
     }
   }else{ return false; }
-}
+}*/
 
 //Change the status of the machine.
 void Mechanical::setStatus(Status stat){
@@ -188,7 +218,7 @@ void Mechanical::setStatus(Status stat){
 
 //Safely send a command, under certain conditions, with certain consequences,
 //and expecting or not, a response that will be stored in a Line list.
-bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
+/*bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
   return this->sendCommand(command,atLeast,success,failure,NULL);
 }
 
@@ -241,7 +271,7 @@ bool Mechanical::receiveLines(String *message) {
   if(Serial.available() == 0) { return false; }
   while(Serial.available() > 0) {*message += Serial.readStringUntil('\n'); }
   return true;
-}
+}*/
 
 /////////////////////////////////
 // Server notifying tools      //

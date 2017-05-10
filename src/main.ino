@@ -27,8 +27,6 @@
 Mechanical mechanical(115200);
 MicroServer microServer(&mechanical);
 
-
-
 ///////////////////////////////////////////////
 // Arduino Setup
 //
@@ -39,6 +37,7 @@ void setup() {
   hostname += String(ESP.getChipId(), HEX);
 
   microServer.setUp(hostname);
+  mechanical.setUp(); //ADDED
 
   // Start OTA server.
   ArduinoOTA.setHostname((const char *)hostname.c_str());
@@ -55,4 +54,8 @@ void loop() {
   // Handle OTA server.
   ArduinoOTA.handle();
   yield();
+}
+
+void serialEvent() {
+  mechanical.handleSerial();
 }

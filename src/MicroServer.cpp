@@ -78,7 +78,7 @@ void MicroServer::setUp(String hostname) {
   // Server commands //
   /////////////////////
 
-  serverWifi.on("/client", [this](){ handleClient();});
+  serverWifi.on("/client", [this](){ handleWhomst();});
   serverWifi.on("/homeAxis", [this](){ handleHomeAxis();});
   serverWifi.on("/moveAxis", [this](){ handleMoveAxis();});
   serverWifi.on("/jogAxis", [this](){ handleJogAxis();});
@@ -86,7 +86,7 @@ void MicroServer::setUp(String hostname) {
   serverWifi.on("/ayy/lmao", [this](){ handleAyyLmao();}); //TODO - remove
   serverWifi.on("/unlockAxis", [this](){handleUnlockAxis();});
   serverWifi.on("/toggle", [this](){handleToggle();});
-  serverWifi.on("/getPos", [this](){handleGetPos();});
+  //serverWifi.on("/getPos", [this](){handleGetPos();});
   serverWifi.on("/toggleLight",[this](){handleToggleLight();});
 
   serverWifi.begin();
@@ -108,12 +108,12 @@ void MicroServer::update(String msg) { serverWifi.send(200, "application/json", 
 //                  //
 //////////////////////
 
-void MicroServer::handleClient() { update(serverWifi.client().remoteIP().toString()); }
+void MicroServer::handleWhomst() { update(serverWifi.client().remoteIP().toString()); }
 void MicroServer::handleAyyLmao() { update("Ayy LMAO"); }
 void MicroServer::handleUnlockAxis() {mechanical->unlockAxis();}
 void MicroServer::handleHomeAxis() { mechanical->homeAxis(); }
 void MicroServer::handleStopJog() { mechanical->stopJog(); }
-void MicroServer::handleGetPos() { mechanical->getPos(); }
+//void MicroServer::handleGetPos() { mechanical->getPos(); }
 
 void MicroServer::handleMoveAxis() {
   if (serverWifi.arg("x") != "" && serverWifi.arg("y") != "" && serverWifi.arg("f") != "") {

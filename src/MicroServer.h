@@ -23,16 +23,17 @@ class MicroServer {
 		void update(String msg);
 	private: 
 		const char* ap_default_psk = "microspot"; ///< Default PSK.
-		void handleClient();
+		void handleWhomst();
+		void handleAyyLmao();
+
 		void handleHomeAxis();
 		void handleMoveAxis();
 		void handleJogAxis();
 		void handleStopJog();
-		void handleAyyLmao();
 		void handleUnlockAxis();
 		void handleToggle();
         void handleToggleLight();
-        void handleGetPos();
+        //void handleGetPos();
 		FileManager fileManager;
 		Mechanical *mechanical;
 };
