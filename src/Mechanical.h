@@ -21,7 +21,7 @@ class Mechanical {
     Position pos;
     Position maxpos;
 
-    String inputString;         // a string to hold incoming data
+    String inputString;  // a string to hold incoming data
     bool stringComplete;  // whether the string is complete
 
     //bool askPos(); //Asks GRBL its position with "?".

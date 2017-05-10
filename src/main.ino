@@ -37,7 +37,7 @@ void setup() {
   hostname += String(ESP.getChipId(), HEX);
 
   microServer.setUp(hostname);
-  mechanical.setUp(); //ADDED
+  mechanical.setUp(); 
 
   // Start OTA server.
   ArduinoOTA.setHostname((const char *)hostname.c_str());
@@ -54,8 +54,4 @@ void loop() {
   // Handle OTA server.
   ArduinoOTA.handle();
   yield();
-}
-
-void serialEvent() {
-  mechanical.handleSerial();
 }

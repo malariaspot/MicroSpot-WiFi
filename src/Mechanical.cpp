@@ -31,17 +31,13 @@ void Mechanical::setUp() {
 }
 
 void Mechanical::handleSerial() {
-  while (Serial.available()) {
-    // get the new byte:
+  while (Serial.available() > 0 /*|| expected > 0*/) {
     char inChar = (char)Serial.read();
-    // add it to the inputString:
     this->inputString += inChar;
-    // if the incoming character is a newline, set a flag
-    // so the main loop can do something about it:
-    if (inChar == '\n') {
-      stringComplete = true;
-    }
+    if (inChar == '\n') { break; }
   }
+
+  st = IDLE;
 }
 
 //Activate and deactivate serial connection.
@@ -88,14 +84,9 @@ void Mechanical::homeAxis() {
   }else{ setStatus(ERROR); }
   return result;*/
 
+  setStatus(MOVING);
   Serial.println("$h");
-
-  if (stringComplete) {
-    microServer->update(inputString);
-    // clear the string:
-    this->inputString = "";
-    stringComplete = false;
-  }
+  //handleSerial();
 }
 
 //Uninterruptible movement
