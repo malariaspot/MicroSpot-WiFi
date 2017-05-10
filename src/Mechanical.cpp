@@ -26,6 +26,7 @@ bool dogWatching;
 bool posOutdated;
 char xBuffer[7];
 char yBuffer[7];
+Position afterPos;
 
 enum MsgType{
   POSITION,
@@ -112,6 +113,7 @@ void Mechanical::serialListen(){
           strncpy(yBuffer, serialBuffer + b + 1, c - b -1);
           pos.x = String(xBuffer);
           pos.y = String(yBuffer);
+          microServer->update("Position: X: " + pos.x + " Y: " + pos.y);
           break;
         default:
           microServer->update("WRONG RESPONSE: " + String(serialBuffer));
@@ -126,6 +128,8 @@ void Mechanical::serialListen(){
         lastIndex = 0;
         flush();
         expected = 0;
+        pos.x = afterPos.x;
+        pos.y = afterPos.y;
         setStatus(after.success);
       }
       break;
@@ -172,6 +176,8 @@ Mechanical::Mechanical(int baud) {
   maxpos.y = MAX_Y;
   pos.x = "";
   pos.y = "";
+  afterPos.x = "";
+  afterPos.y = "";
   pinMode(ENABLEPIN,OUTPUT);
   expected = 0;
   bufferIndex = 0;
@@ -219,6 +225,8 @@ bool Mechanical::homeAxis() {
   //this command can take a while to confirm
   longWait = true;
   posOutdated = true; //temporary cautionary measure.
+  afterPos.x = "0.000";
+  afterPos.y = "0.000";
   return sendCommand("$h",LOCK,IDLE,ERROR);
 }
 
@@ -228,6 +236,8 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
   //this command can take a while to confirm.
   longWait = true;
   posOutdated = true; //temporary cautionary measure.
+  afterPos.x = X;
+  afterPos.y = Y;
   return sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
    MOVING,IDLE,ERROR);
 }
