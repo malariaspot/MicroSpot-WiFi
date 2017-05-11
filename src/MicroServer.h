@@ -2,11 +2,11 @@
 #define MICROSERVER_H
 
 #include <WiFiUdp.h>
+#include <ESP8266mDNS.h>
 #include "WiFiServer.h"
 #include <WiFiClient.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h> 
-#include <ESP8266mDNS.h>
+//#include <ESP8266WebServer.h> 
 
 #include <string>
 #include <tuple>
@@ -22,8 +22,10 @@ class MicroServer {
 		void setUp(String hostname);
 		void run();
 		void update(String msg);
+		void update(String msg, WiFiClient * client);
 	private: 
 		const char* ap_default_psk = "microspot"; ///< Default PSK.
+
 		void handleWhomst();
 		void handleAyyLmao();
 

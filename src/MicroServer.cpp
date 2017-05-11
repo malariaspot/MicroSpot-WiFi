@@ -2,7 +2,8 @@
 #include "Mechanical.h"
 #include <Ticker.h>
 
-ESP8266WebServer serverWifi(80);
+WiFiServer serverWifi(80);
+WiFiClient currentClient;
 
 ///////////////////////////////////////////////
 // LED ticker and functions to make a Blink
@@ -78,7 +79,7 @@ void MicroServer::setUp(String hostname) {
   // Server commands //
   /////////////////////
 
-  serverWifi.on("/client", [this](){ handleWhomst();});
+/*serverWifi.on("/client", [this](){ handleWhomst();});
   serverWifi.on("/homeAxis", [this](){ handleHomeAxis();});
   serverWifi.on("/moveAxis", [this](){ handleMoveAxis();});
   serverWifi.on("/jogAxis", [this](){ handleJogAxis();});
@@ -87,7 +88,7 @@ void MicroServer::setUp(String hostname) {
   serverWifi.on("/unlockAxis", [this](){handleUnlockAxis();});
   serverWifi.on("/toggle", [this](){handleToggle();});
   serverWifi.on("/getPos", [this](){handleGetPos();});
-  serverWifi.on("/toggleLight",[this](){handleToggleLight();});
+  serverWifi.on("/toggleLight",[this](){handleToggleLight();});*/
 
   serverWifi.begin();
 
@@ -95,8 +96,34 @@ void MicroServer::setUp(String hostname) {
 }
 
 void MicroServer::run() {
-  if(!mechanical->longWait) serverWifi.handleClient();
-  mechanical->run();
+  //if(!mechanical->longWait) serverWifi.handleClient();
+
+  WiFiClient client = serverWifi.available();
+
+  // Check if a client has connected
+  if (client) {
+    currentClient = client;
+  // Wait until the client sends some data
+    while(!client.available()){
+      delay(1);
+    }
+    
+    // Read the first line of the request
+    String req = client.readStringUntil('\r');
+    currentClient.flush();
+    
+    // Match the request
+    if (req.indexOf("/ayy/lmao") != -1)
+      handleAyyLmao();
+    else if (req.indexOf("/homeAxis") != -1){
+      handleHomeAxis();
+    }else{
+      update("Not Found!");
+      return;
+    }
+
+    mechanical->run();
+  }
 }
 
 //////////////////////
@@ -104,51 +131,62 @@ void MicroServer::run() {
 //                  //
 //////////////////////
 
-void MicroServer::update(String msg) { serverWifi.send(200, "application/json", "Success: " + msg); }
+void MicroServer::update(String msg) { 
+  //serverWifi.send(200, "application/json", "Success: " + msg); 
+  currentClient.flush();
+
+  // Prepare the response
+  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nSuccess: "+msg+"\r\n";
+
+  // Send the response to the client
+  currentClient.print(s);
+  delay(1);
+  currentClient.stop();
+}
 
 //////////////////////
 // Command Handlers //
 //                  //
 //////////////////////
 
-void MicroServer::handleWhomst() { update(serverWifi.client().remoteIP().toString()); }
+void MicroServer::handleWhomst() { /*update(serverWifi.client().remoteIP().toString());*/ }
 void MicroServer::handleAyyLmao() { update("Ayy LMAO"); }
-void MicroServer::handleUnlockAxis() {mechanical->unlockAxis();}
+void MicroServer::handleUnlockAxis() {/*mechanical->unlockAxis();*/}
 void MicroServer::handleHomeAxis() { 
-  if(mechanical->getStatus() != MOVING) {
+  //if(mechanical->getStatus() != MOVING) {
     mechanical->homeAxis(); 
-  }else{
+  /*}else{
     update("BUSY");
-  }
+  }*/
 }
 void MicroServer::handleStopJog() { mechanical->stopJog(); }
 void MicroServer::handleGetPos() { mechanical->getPos(); }
 
 void MicroServer::handleMoveAxis() {
-  if (serverWifi.arg("x") != "" && serverWifi.arg("y") != "" && serverWifi.arg("f") != "") {
+  /*if (serverWifi.arg("x") != "" && serverWifi.arg("y") != "" && serverWifi.arg("f") != "") {
     mechanical->moveAxis((String)serverWifi.arg("x"), (String)serverWifi.arg("y"), (String)serverWifi.arg("f"));
-  }else{ update("Error: One or more position arguments are missing!"); }
+  }else{ update("Error: One or more position arguments are missing!"); }*/
 }
 
 void MicroServer::handleJogAxis() {
-  if (serverWifi.arg("x") != "" && serverWifi.arg("y") != "" && serverWifi.arg("f") != "") {
+  /*if (serverWifi.arg("x") != "" && serverWifi.arg("y") != "" && serverWifi.arg("f") != "") {
     mechanical->jogAxis((String)serverWifi.arg("x"), (String)serverWifi.arg("y"), (String)serverWifi.arg("f"), 
       (String)serverWifi.arg("r"), (String)serverWifi.arg("s"));
-  }else{ update("Error: One or more position arguments are missing!"); }
+  }else{ update("Error: One or more position arguments are missing!"); }*/
 }
 
 void MicroServer::handleToggle() {
-  if (serverWifi.arg("option") !=  "") {
+  /*if (serverWifi.arg("option") !=  "") {
     if(serverWifi.arg("option") == "true") mechanical->toggle(true);
     else if(serverWifi.arg("option") == "false") mechanical->toggle(false);
     else update("Error: Invalid 'option' value!");
-  }else{ update("Error: No 'option' value provided!"); }
+  }else{ update("Error: No 'option' value provided!"); }*/
 }
 
 void MicroServer::handleToggleLight(){
-  if (serverWifi.arg("l") != "") {
+  /*if (serverWifi.arg("l") != "") {
     mechanical->toggleLight(serverWifi.arg("l").toInt());
   }else{
     update("Error: No intensity value provided!");
-  }
+  }*/
 }
