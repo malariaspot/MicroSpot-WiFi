@@ -221,6 +221,8 @@ bool Mechanical::toggle(bool button) {
 
 //Home the axes
 bool Mechanical::homeAxis() {
+  if(st == HOMING) return false;
+  st = HOMING;
   expected += 2;
   //this command can take a while to confirm
   longWait = true;

@@ -141,7 +141,7 @@ void MicroServer::handleWhomst() {}
 void MicroServer::handleAyyLmao() { update("Ayy LMAO"); }
 void MicroServer::handleUnlockAxis() {}
 void MicroServer::handleHomeAxis() { 
-  if (!mechanical->homeAxis()) { update("Busy"); } 
+  mechanical->homeAxis();
 }
 void MicroServer::handleStopJog() { mechanical->stopJog(); }
 void MicroServer::handleGetPos() { mechanical->getPos(); }
