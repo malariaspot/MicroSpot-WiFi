@@ -116,6 +116,32 @@ void MicroServer::handleClients() {
       currentClient = client;
       mechanical->getPos();
       return;
+    }else if (req.indexOf("/moveAxis") != -1) {
+      int x,y,f;
+      x = req.indexOf("x=");
+      y = req.indexOf("y=");
+      f = req.indexOf("f=");
+      if (x > 0 && y > 0 && f > 0) { 
+        if (mechanical->moveAxis(req.substring(x+2, y), req.substring(y+2, f), req.substring(f+2))) {
+          currentClient = client;
+        }else{
+          update("Busy", &client);
+        }
+      }else{ update("Error: One or more position arguments are missing!"); }
+    }else if (req.indexOf("/jogAxis") != -1) {
+      int x,y,f,s, r;
+      x = req.indexOf("x=");
+      y = req.indexOf("y=");
+      f = req.indexOf("f=");
+      r = req.indexOf("r=");
+      s = req.indexOf("s=");
+      if (x > 0 && y > 0 && f > 0) { 
+        if (mechanical->jogAxis(req.substring(x+2, y),req.substring(y+2,f),req.substring(f+2,r),req.substring(r+2,s),req.substring(s+2))) {
+          currentClient = client;
+        }else{
+          update("Busy", &client);
+        }
+      }else{ update("Error: One or more position arguments are missing!"); }
     }else{
       update("Not found!",&client);
       return;
