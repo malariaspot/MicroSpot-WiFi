@@ -127,7 +127,7 @@ void MicroServer::handleClients() {
         }else{
           update("Busy", &client);
         }
-      }else{ update("Error: One or more position arguments are missing!"); }
+      }else{ update("Error: One or more position arguments are missing!", &client); }
     }else if (req.indexOf("/jogAxis") != -1) {
       int x,y,f,s, r;
       x = req.indexOf("x=");
@@ -141,9 +141,9 @@ void MicroServer::handleClients() {
         }else{
           update("Busy", &client);
         }
-      }else{ update("Error: One or more position arguments are missing!"); }
+      }else{ update("Error: One or more position arguments are missing!", &client); }
     }else{
-      update("Not found!",&client);
+      update("Not found!", &client);
       return;
     }
   }
