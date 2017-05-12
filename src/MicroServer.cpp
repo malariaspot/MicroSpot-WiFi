@@ -155,7 +155,9 @@ void MicroServer::handleClients() {
 
 void MicroServer::update(String msg, WiFiClient * client) { 
   client->flush();
-  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nSuccess: "+msg+"\r\n";
+  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nSuccess: "+msg+"\r\n" 
+   + client->remoteIP().toString() + ":" + client->remotePort() + " " 
+   + client->localIP().toString() + ":" + client->localPort();
   client->print(s);
   delay(1);
   client->stop();
