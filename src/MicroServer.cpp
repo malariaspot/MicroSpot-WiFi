@@ -94,7 +94,7 @@ void MicroServer::handleClients() {
     String req = client.readStringUntil('\r');
     client.flush();
     if (req.indexOf("/ayy/lmao") != -1) {
-      update("Ayy Lmao");
+      update("Ayy Lmao", &client);
       return;
     }else if (req.indexOf("/homeAxis") != -1) {
       if (mechanical->homeAxis()) {
@@ -103,16 +103,21 @@ void MicroServer::handleClients() {
         update("Busy", &client);
       }
     }else if (req.indexOf("/who") != -1) {
-      update(client.remoteIP().toString());
+      update(client.remoteIP().toString() + " " + client.remotePort(),
+        &client);
       return;
     }else if (req.indexOf("/stopJog") != -1) {
-      mechanical->stopJog();
-      return;
+      if (mechanical->stopJog()) {
+        currentClient = client;
+      }else{
+        update("Busy", &client);
+      }
     }else if (req.indexOf("/getPos") != -1) {
+      currentClient = client;
       mechanical->getPos();
       return;
     }else{
-      update("Not found!");
+      update("Not found!",&client);
       return;
     }
   }
