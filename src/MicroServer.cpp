@@ -122,7 +122,7 @@ void MicroServer::handleClients() {
       y = req.indexOf("y=");
       f = req.indexOf("f=");
       if (x > 0 && y > 0 && f > 0) { 
-        if (mechanical->moveAxis(req.substring(x+2, y), req.substring(y+2, f), req.substring(f+2))) {
+        if (mechanical->moveAxis(req.substring(x+2, y-1), req.substring(y+2, f - 1), req.substring(f+2))) {
           currentClient = client;
         }else{
           update("Busy", &client);
@@ -136,7 +136,7 @@ void MicroServer::handleClients() {
       r = req.indexOf("r=");
       s = req.indexOf("s=");
       if (x > 0 && y > 0 && f > 0) { 
-        if (mechanical->jogAxis(req.substring(x+2, y),req.substring(y+2,f),req.substring(f+2,r),req.substring(r+2,s),req.substring(s+2))) {
+        if (mechanical->jogAxis(req.substring(x+2, y - 1),req.substring(y+2,f - 1),req.substring(f+2,r - 1),req.substring(r+2,s - 1),req.substring(s+2))) {
           currentClient = client;
         }else{
           update("Busy", &client);
