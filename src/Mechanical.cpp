@@ -222,6 +222,8 @@ bool Mechanical::toggle(bool button) {
 //Home the axes
 bool Mechanical::homeAxis() {
   if(st == HOMING) return false;
+  bool result = sendCommand("$h",LOCK,IDLE,ERROR);
+  if(!result) return result;
   st = HOMING;
   expected += 2;
   //this command can take a while to confirm
@@ -229,19 +231,21 @@ bool Mechanical::homeAxis() {
   posOutdated = true; //temporary cautionary measure.
   afterPos.x = "0.000";
   afterPos.y = "0.000";
-  return sendCommand("$h",LOCK,IDLE,ERROR);
+  return result;
 }
 
 //Uninterruptible movement
 bool Mechanical::moveAxis(String X, String Y, String F) {
+  bool result = sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
+  MOVING,IDLE,ERROR);
+  if(!result) return result;
   expected += 4;
   //this command can take a while to confirm.
   longWait = true;
   posOutdated = true; //temporary cautionary measure.
   afterPos.x = X;
   afterPos.y = Y;
-  return sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
-   MOVING,IDLE,ERROR);
+  return result;
 }
 
 //Interruptible movement
@@ -256,23 +260,29 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
   if(S == "true"){
     stopping = "\x85\r\n";
   }
+  bool result = sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + 
+  " F" + F, MOVING, JOGGING, ERROR);
+  if(!result) return result;
   expected += 2;
   posOutdated = true;
-  return sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + 
-    " F" + F, MOVING, JOGGING, ERROR);
+  return result;
 }
 
 //stop jogging movement.
 bool Mechanical::stopJog() {
+  bool result = sendCommand("\x85",MOVING,IDLE,ERROR);
+  if(!result) return result;
   expected += 2;
   posOutdated = true;
-  return sendCommand("\x85",MOVING,IDLE,ERROR);
+  return result;
 }
 
-void Mechanical::unlockAxis() {
+bool Mechanical::unlockAxis() {
+  bool result = sendCommand("$x",LOCK,IDLE,ERROR);
+  if(!result) return result;
   expected += 2;
   infos += 1;
-  sendCommand("$x",LOCK,IDLE,ERROR);
+  return result;
 }
 
 void Mechanical::toggleLight(int intensity){
