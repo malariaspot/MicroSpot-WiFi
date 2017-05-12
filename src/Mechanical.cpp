@@ -256,10 +256,7 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
   }else{
     mode = "G90";
   }
-  String stopping = "";
-  if(S == "true"){
-    stopping = "\x85\r\n";
-  }
+  String  stopping = "\x85\r\n";
   bool result = sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + 
   " F" + F, MOVING, JOGGING, ERROR);
   if(!result) return result;
