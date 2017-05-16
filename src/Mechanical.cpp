@@ -22,7 +22,7 @@ int expected, infos;
 double timeStamp;
 double serialStamp;
 double watchDogStamp;
-bool dogWatching;
+bool dogWatching, dogTriggered;
 bool posOutdated;
 char xBuffer[7];
 char yBuffer[7];
@@ -141,6 +141,7 @@ void Mechanical::serialListen(){
 //and expecting or not, a response that will be stored in a Line list.
 bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
   if(st >= atLeast) {
+    if(dogTriggered){flush(); dogTriggered = false;}
     this->after.success = success;
     this->after.failure = failure;
     watchDogStamp = millis();
@@ -187,6 +188,7 @@ Mechanical::Mechanical(int baud) {
   this->st = OFF;
   serialStamp = millis();
   dogWatching = false;
+  dogTriggered = false;
 }
 
 //Activate and deactivate serial connection.
@@ -346,6 +348,7 @@ void Mechanical::run(){
     microServer->update("WATCHDOG ERROR. Expected = " 
       + String(expected));
     dogWatching = false; //turn off watchdog
+    dogTriggered = true; //notify the next command to flush any possible serial leftover.
     longWait = false; //unlock MicroServer
     st = LOCK;
     bufferIndex = 0;
