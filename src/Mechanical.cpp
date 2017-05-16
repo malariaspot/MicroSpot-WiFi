@@ -221,7 +221,6 @@ bool Mechanical::toggle(bool button) {
 
 //Home the axes
 bool Mechanical::homeAxis() {
-  if(st == HOMING) return false;
   bool result = sendCommand("$h",LOCK,IDLE,ERROR);
   if(!result) return result;
   st = HOMING;
@@ -237,8 +236,9 @@ bool Mechanical::homeAxis() {
 //Uninterruptible movement
 bool Mechanical::moveAxis(String X, String Y, String F) {
   bool result = sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
-  MOVING,IDLE,ERROR);
+  IDLE,IDLE,ERROR);
   if(!result) return result;
+  st == MOVING;
   expected += 4;
   //this command can take a while to confirm.
   longWait = true;
@@ -258,7 +258,7 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
   }
   String  stopping = "\x85\r\n";
   bool result = sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + 
-  " F" + F, MOVING, JOGGING, ERROR);
+  " F" + F, JOGGING, JOGGING, ERROR);
   if(!result) return result;
   expected += 2;
   posOutdated = true;
