@@ -347,6 +347,7 @@ void Mechanical::run(){
       + String(expected));
     dogWatching = false; //turn off watchdog
     longWait = false; //unlock MicroServer
+    st = LOCK;
     bufferIndex = 0;
     lastIndex = 0;
     expected = 0;
