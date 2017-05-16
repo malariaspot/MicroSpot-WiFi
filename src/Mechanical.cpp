@@ -237,6 +237,11 @@ bool Mechanical::homeAxis() {
 
 //Uninterruptible movement
 bool Mechanical::moveAxis(String X, String Y, String F) {
+  //using norm 1 for speed purposes.
+  //That turns that 70000 into a magic number.
+  if(70000.0*(X.toFloat() + Y.toFloat())/F.toFloat() > WATCHDOG_LIMIT){
+    return false;
+  }
   bool result = sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
   IDLE,IDLE,ERROR);
   if(!result) return result;
