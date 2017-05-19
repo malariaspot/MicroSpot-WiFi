@@ -101,6 +101,7 @@ enum MsgType{
   MEMORY, //information fomr EEPROM
   NQMESSAGE, //Non queried message
   STARTUP, // startup routine stored in GRBL
+  EMPTYLINE, //GRBL sent an empty line.
   DIRTY // dirty message, unparseable.
 };
 
@@ -127,6 +128,8 @@ MsgType msgClassify(int from, char * msg){
     return ALARM;
   }else if(getCharIndex(from, msg, "Grbl") >= 0){
     return HANDSHAKE;
+  }else if(getCharIndex(from, msg, "\r" == 0)){
+    return EMPTYLINE;
   }else if(getCharIndex(from, msg, "[") >= 0){
     return NQMESSAGE;
   }else if(getCharIndex(from, msg, "$") >= 0){
@@ -176,6 +179,7 @@ void Mechanical::serialListen(){
           break;
         case HANDSHAKE:
         case NQMESSAGE:
+        case EMPTYLINE:
         case MEMORY:
         case STARTUP:
           break;
