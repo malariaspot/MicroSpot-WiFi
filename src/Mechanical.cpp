@@ -30,10 +30,15 @@ char yBuffer[7];
 Position afterPos;
 
 enum MsgType{
-  POSITION,
-  AFFIRMATIVE,
-  ERRONEOUS,
-  ALARM
+  POSITION, //status and position report
+  AFFIRMATIVE, //this is an "ok"
+  ERRONEOUS, //this is an error report
+  ALARM, //ALARM report.
+  HANDSHAKE, //Initial handshake, after restart.
+  MEMORY, //information fomr EEPROM
+  NQMESSAGE, //Non queried message
+  STARTUP, // startup routine stored in GRBL
+  DIRTY // dirty message, unparseable.
 };
 
 /////////////////////
@@ -53,10 +58,20 @@ MsgType msgClassify(int from, char * msg){
     return AFFIRMATIVE;
   }else if(getCharIndex(from, msg, "error") >= 0){
     return ERRONEOUS;
-  }else if(getCharIndex(from, msg,"<") >= 0){
+  }else if(getCharIndex(from, msg, "<") >= 0){
     return POSITION;
-  }else{
+  }else if(getCharIndex(from, msg, "ALARM") >= 0){
     return ALARM;
+  }else if(getCharIndex(from, msg, "Grbl") >= 0){
+    return HANDSHAKE;
+  }else if(getCharIndex(from, msg, "[") >= 0){
+    return NQMESSAGE;
+  }else if(getCharIndex(from, msg, "$") >= 0){
+    return MEMORY;
+  }else if(getCharIndex(from, msg, ">") >= 0){
+    return STARTUP;
+  }else{
+    return DIRTY;
   }
 }
 
@@ -90,6 +105,14 @@ void Mechanical::serialListen(){
           pos.x = String(xBuffer);
           pos.y = String(yBuffer);
           microServer->update("Position: X: " + pos.x + " Y: " + pos.y);
+          break;
+        case ALARM:
+          microServer->update("GRBL Alarm response. HALT!");
+          break;
+        case HANDSHAKE:
+        case NQMESSAGE:
+        case MEMORY:
+        case STARTUP:
           break;
         default:
           microServer->update("WRONG RESPONSE: " + String(serialBuffer));
