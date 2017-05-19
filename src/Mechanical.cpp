@@ -82,6 +82,7 @@ void Mechanical::errorHandler(int errNum){
     default:
       break;
   }
+  return;
 }
 
 void Mechanical::restartAll(){
@@ -161,8 +162,7 @@ void Mechanical::serialListen(){
           break;
         case ERRONEOUS:
           expected--;
-          //errorHandler(atoi(serialBuffer + lastIndex + 6));
-          microServer->update("GRBL didn't understand: " + lastCommand);
+          errorHandler(atoi(serialBuffer + lastIndex + 6));
           break;
         case POSITION:
           infos --;
