@@ -29,6 +29,25 @@ char xBuffer[7];
 char yBuffer[7];
 Position afterPos;
 
+
+/////////////////////////////////////////
+// Internal status management
+/////////////////////////////////////////
+
+void Mechanical::restartAll(){
+    dogWatching = false; //turn off watchdog
+    dogTriggered = true; //notify the next command to flush any possible serial leftover.
+    longWait = false; //unlock MicroServer
+    st = LOCK;
+    bufferIndex = 0;
+    lastIndex = 0;
+    expected = 0;
+    infos = 0;
+    flush();
+}
+
+
+
 enum MsgType{
   POSITION, //status and position report
   AFFIRMATIVE, //this is an "ok"
@@ -108,6 +127,7 @@ void Mechanical::serialListen(){
           break;
         case ALARM:
           microServer->update("GRBL Alarm response. HALT!");
+          restartAll();
           break;
         case HANDSHAKE:
         case NQMESSAGE:
@@ -116,6 +136,7 @@ void Mechanical::serialListen(){
           break;
         default:
           microServer->update("WRONG RESPONSE: " + String(serialBuffer));
+          restartAll();
           break;
       }
       lastIndex = bufferIndex;
@@ -351,15 +372,7 @@ void Mechanical::run(){
   if(dogWatching && (millis() - watchDogStamp > WATCHDOG_LIMIT)){
     microServer->update("WATCHDOG ERROR. Expected = " 
       + String(expected));
-    dogWatching = false; //turn off watchdog
-    dogTriggered = true; //notify the next command to flush any possible serial leftover.
-    longWait = false; //unlock MicroServer
-    st = LOCK;
-    bufferIndex = 0;
-    lastIndex = 0;
-    expected = 0;
-    infos = 0;
-    flush();
+    restartAll();
   }
 }
 

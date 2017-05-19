@@ -37,6 +37,8 @@ class Mechanical {
     void setStatus(Status stat);
     //loop for checking the serial
     void serialListen();
+    //Restart serial communication.
+    void restartAll();
 
     String statusToString(Status status) {
         switch (status) {
