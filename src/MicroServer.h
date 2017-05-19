@@ -20,17 +20,23 @@ class MicroServer {
 	public: 
 		MicroServer(Mechanical *m);
 
+		void run();
 		void setup(String hostname);
-		void handleClients();
-
 		void update(String msg);
-		void update(String msg, WiFiClient * client);
+		void send(String msg, WiFiClient * client);
 	private: 
 		const char* ap_default_psk = "microspot"; ///< Default PSK.
 
 		WiFiClient currentClient;
+		WiFiClient newClient;
+		String url;
+		String method;
+
 		FileManager fileManager;
 		Mechanical *mechanical;
+
+		void parseRequest();
+		void handleClient();
 };
 
 #endif //MICROSERVER_H

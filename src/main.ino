@@ -49,7 +49,7 @@ void setup() {
 ///////////////////////////////////////////////
 void loop() {
   mechanical.run();
-  microServer.handleClients();
+  microServer.run();
   yield();
   // Handle OTA server.
   ArduinoOTA.handle();
