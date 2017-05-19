@@ -133,7 +133,7 @@ MsgType msgClassify(int from, char * msg){
     return ALARM;
   }else if(getCharIndex(from, msg, "Grbl") >= 0){
     return HANDSHAKE;
-  }else if(getCharIndex(from, msg, "\r") == 0){
+  }else if(getCharIndex(from, msg, "\r") == from){
     return EMPTYLINE;
   }else if(getCharIndex(from, msg, "[") >= 0){
     return NQMESSAGE;
