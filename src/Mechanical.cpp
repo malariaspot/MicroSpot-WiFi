@@ -161,7 +161,8 @@ void Mechanical::serialListen(){
           break;
         case ERRONEOUS:
           expected--;
-          errorHandler(atoi(serialBuffer + lastIndex + 6));
+          //errorHandler(atoi(serialBuffer + lastIndex + 6));
+          microServer->update("GRBL didn't understand: " + lastCommand);
           break;
         case POSITION:
           infos --;
@@ -340,7 +341,7 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
   bool result = sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + 
   " F" + F, JOGGING, JOGGING, ERROR);
   if(!result) return result;
-  expected += 2;
+  expected += 4;
   posOutdated = true;
   return result;
 }
