@@ -1,5 +1,6 @@
 #include "Mechanical.h"
 #include "MicroServer.h"
+#include "charUtils.h"
 
 #define TIMEOUT 4000
 #define REQUESTLIMIT 200
@@ -28,11 +29,79 @@ char xBuffer[7];
 char yBuffer[7];
 Position afterPos;
 
+
+/////////////////////////////////////////
+// Internal status management
+/////////////////////////////////////////
+
+void Mechanical::errorHandler(int errNum){
+  switch(errNum){
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+      microServer->update("Jog out of bounds");
+      break;
+    case 16:
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+    case 26:
+    case 27:
+    case 28:
+    case 29:
+    case 30:
+    case 31:
+    case 32:
+    case 33:
+    case 34:
+    case 35:
+    case 36:
+    case 37:
+    default:
+      break;
+  }
+}
+
+void Mechanical::restartAll(){
+    dogWatching = false; //turn off watchdog
+    longWait = false; //unlock MicroServer
+    bufferIndex = 0;
+    lastIndex = 0;
+    expected = 0;
+    infos = 0;
+    flush();
+}
+
+
+
 enum MsgType{
-  POSITION,
-  AFFIRMATIVE,
-  ERRONEOUS,
-  ALARM
+  POSITION, //status and position report
+  AFFIRMATIVE, //this is an "ok"
+  ERRONEOUS, //this is an error report
+  ALARM, //ALARM report.
+  HANDSHAKE, //Initial handshake, after restart.
+  MEMORY, //information fomr EEPROM
+  NQMESSAGE, //Non queried message
+  STARTUP, // startup routine stored in GRBL
+  DIRTY // dirty message, unparseable.
 };
 
 /////////////////////
@@ -46,41 +115,26 @@ enum MsgType{
 // Serial input check utilities //
 //////////////////////////////////
 
-int getCharIndex(int from, char * buffer, const char * control){
-  if(*control == '\0'){
-    return from;
-  }else{
-    if(*(buffer + from) == '\0'){
-      return -1;
-    }else{
-      if(*(buffer + from) == *control){
-        int last = getCharIndex(from, buffer + 1, control + 1);
-        if(last < 0){
-          return getCharIndex(from + 1, buffer, control);
-        }else{
-          return last;
-        }
-      }else{
-        return getCharIndex(from + 1, buffer, control);
-      }
-    }
-  }
-}
-
-int getCharIndex(char * buffer, const char * control){
-  return getCharIndex(0,buffer,control);
-}
-
 
 MsgType msgClassify(int from, char * msg){
   if(getCharIndex(from, msg, "ok") >= 0){
     return AFFIRMATIVE;
   }else if(getCharIndex(from, msg, "error") >= 0){
     return ERRONEOUS;
-  }else if(getCharIndex(from, msg,"<") >= 0){
+  }else if(getCharIndex(from, msg, "<") >= 0){
     return POSITION;
-  }else{
+  }else if(getCharIndex(from, msg, "ALARM") >= 0){
     return ALARM;
+  }else if(getCharIndex(from, msg, "Grbl") >= 0){
+    return HANDSHAKE;
+  }else if(getCharIndex(from, msg, "[") >= 0){
+    return NQMESSAGE;
+  }else if(getCharIndex(from, msg, "$") >= 0){
+    return MEMORY;
+  }else if(getCharIndex(from, msg, ">") >= 0){
+    return STARTUP;
+  }else{
+    return DIRTY;
   }
 }
 
@@ -100,7 +154,7 @@ void Mechanical::serialListen(){
           break;
         case ERRONEOUS:
           expected--;
-          //TODO - Do something about the error.
+          errorHandler(atoi(serialBuffer + lastIndex + 6));
           break;
         case POSITION:
           infos --;
@@ -115,19 +169,24 @@ void Mechanical::serialListen(){
           pos.y = String(yBuffer);
           microServer->update("Position: X: " + pos.x + " Y: " + pos.y);
           break;
+        case ALARM:
+          microServer->update("GRBL Alarm response. HALT!");
+          restartAll();
+          st = LOCK;
+          break;
+        case HANDSHAKE:
+        case NQMESSAGE:
+        case MEMORY:
+        case STARTUP:
+          break;
         default:
           microServer->update("WRONG RESPONSE: " + String(serialBuffer));
+          restartAll();
           break;
       }
       lastIndex = bufferIndex;
       if(expected <= 0){
-        dogWatching = false;
-        longWait = false;
-        infos = 0;
-        bufferIndex = 0;
-        lastIndex = 0;
-        flush();
-        expected = 0;
+        restartAll();
         pos.x = afterPos.x;
         pos.y = afterPos.y;
         setStatus(after.success);
@@ -352,15 +411,9 @@ void Mechanical::run(){
   if(dogWatching && (millis() - watchDogStamp > WATCHDOG_LIMIT)){
     microServer->update("WATCHDOG ERROR. Expected = " 
       + String(expected));
-    dogWatching = false; //turn off watchdog
+    restartAll();
     dogTriggered = true; //notify the next command to flush any possible serial leftover.
-    longWait = false; //unlock MicroServer
-    st = LOCK;
-    bufferIndex = 0;
-    lastIndex = 0;
-    expected = 0;
-    infos = 0;
-    flush();
+    st = LOCK; //force the user to make a homing before continuing.
   }
 }
 
