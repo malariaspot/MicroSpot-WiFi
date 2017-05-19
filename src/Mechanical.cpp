@@ -28,6 +28,7 @@ bool posOutdated;
 char xBuffer[7];
 char yBuffer[7];
 Position afterPos;
+String lastCommand;
 
 
 /////////////////////////////////////////
@@ -38,7 +39,8 @@ void Mechanical::errorHandler(int errNum){
   switch(errNum){
     case 1:
     case 2:
-    case 3:
+      microServer->update("GRBL didn't understand: " + lastCommand);
+      break;
     case 4:
     case 5:
     case 6:
@@ -128,7 +130,7 @@ MsgType msgClassify(int from, char * msg){
     return ALARM;
   }else if(getCharIndex(from, msg, "Grbl") >= 0){
     return HANDSHAKE;
-  }else if(getCharIndex(from, msg, "\r" == 0)){
+  }else if(getCharIndex(from, msg, "\r") == 0){
     return EMPTYLINE;
   }else if(getCharIndex(from, msg, "[") >= 0){
     return NQMESSAGE;
@@ -205,6 +207,7 @@ void Mechanical::serialListen(){
 bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
   if(st >= atLeast) {
     if(dogTriggered){flush(); dogTriggered = false;}
+    lastCommand = command;
     this->after.success = success;
     this->after.failure = failure;
     watchDogStamp = millis();
