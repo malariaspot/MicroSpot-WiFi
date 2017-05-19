@@ -36,9 +36,7 @@ Position afterPos;
 
 void Mechanical::restartAll(){
     dogWatching = false; //turn off watchdog
-    dogTriggered = true; //notify the next command to flush any possible serial leftover.
     longWait = false; //unlock MicroServer
-    st = LOCK;
     bufferIndex = 0;
     lastIndex = 0;
     expected = 0;
@@ -128,6 +126,7 @@ void Mechanical::serialListen(){
         case ALARM:
           microServer->update("GRBL Alarm response. HALT!");
           restartAll();
+          st = LOCK;
           break;
         case HANDSHAKE:
         case NQMESSAGE:
@@ -141,13 +140,7 @@ void Mechanical::serialListen(){
       }
       lastIndex = bufferIndex;
       if(expected <= 0){
-        dogWatching = false;
-        longWait = false;
-        infos = 0;
-        bufferIndex = 0;
-        lastIndex = 0;
-        flush();
-        expected = 0;
+        restartAll();
         pos.x = afterPos.x;
         pos.y = afterPos.y;
         setStatus(after.success);
@@ -373,6 +366,8 @@ void Mechanical::run(){
     microServer->update("WATCHDOG ERROR. Expected = " 
       + String(expected));
     restartAll();
+    dogTriggered = true; //notify the next command to flush any possible serial leftover.
+    st = LOCK; //force the user to make a homing before continuing.
   }
 }
 
