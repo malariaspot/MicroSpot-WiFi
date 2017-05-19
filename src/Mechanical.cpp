@@ -24,7 +24,7 @@ double timeStamp;
 double serialStamp;
 double watchDogStamp;
 bool dogWatching, dogTriggered;
-bool posOutdated;
+bool posOutdated, answered;
 char xBuffer[7];
 char yBuffer[7];
 Position afterPos;
@@ -39,6 +39,7 @@ void Mechanical::errorHandler(int errNum){
   switch(errNum){
     case 1:
     case 2:
+      answered = true;
       microServer->update("GRBL didn't understand: " + lastCommand);
       break;
     case 4:
@@ -53,6 +54,7 @@ void Mechanical::errorHandler(int errNum){
     case 13:
     case 14:
     case 15:
+      answered = true;
       microServer->update("Jog out of bounds");
       break;
     case 16:
@@ -173,9 +175,11 @@ void Mechanical::serialListen(){
           pos.x = String(xBuffer);
           pos.y = String(yBuffer);
           microServer->update("Position: X: " + pos.x + " Y: " + pos.y);
+          answered = true;
           break;
         case ALARM:
           microServer->update("GRBL Alarm response. HALT!");
+          answered = true;
           restartAll();
           st = LOCK;
           break;
@@ -187,6 +191,7 @@ void Mechanical::serialListen(){
           break;
         default:
           microServer->update("WRONG RESPONSE: " + String(serialBuffer));
+          answered = true;
           restartAll();
           break;
       }
@@ -208,6 +213,7 @@ bool Mechanical::sendCommand(String command, Status atLeast, Status success, Sta
   if(st >= atLeast) {
     if(dogTriggered){flush(); dogTriggered = false;}
     lastCommand = command;
+    answered = false;
     this->after.success = success;
     this->after.failure = failure;
     watchDogStamp = millis();
@@ -250,6 +256,7 @@ Mechanical::Mechanical(int baud) {
   bufferIndex = 0;
   lastIndex = 0;
   infos = 0;
+  answered = true;
   longWait = false;
   this->st = OFF;
   serialStamp = millis();
@@ -407,7 +414,7 @@ bool Mechanical::askPos() {
 //Change the status of the machine.
 void Mechanical::setStatus(Status stat){
   st = stat;
-  microServer->update(statusToString(st));
+  if(!answered) microServer->update(statusToString(st));
 }
 
 void Mechanical::run(){
