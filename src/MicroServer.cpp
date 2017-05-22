@@ -84,7 +84,7 @@ void MicroServer::update(String msg) { send(200, msg, &currentClient); }
 /* PRIVATE */
 
 String MicroServer::arg(String arg) {
-  int beginning = request.indexOf(arg)+2;
+  int beginning = request.indexOf(arg+"=")+2;
   int end = request.indexOf("&",beginning);
   if (end < 0) return request.substring(beginning, request.indexOf(" HTTP/"));
   return request.substring(beginning, end);
@@ -136,6 +136,14 @@ void MicroServer::handleClient() {
     if (hasArg("l")){
       currentClient = newClient;
       mechanical->toggleLight(arg("l").toInt());
+    }
+    
+  }else if(url == "/toggle"){
+    
+    if (hasArg("o")){
+      currentClient = newClient;
+      if(arg("o") == "1") mechanical->toggle(true);
+      else mechanical->toggle(false);
     }
     
   }else send(404,url + " not found!", &newClient); 

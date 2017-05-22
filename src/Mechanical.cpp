@@ -263,6 +263,7 @@ Mechanical::Mechanical(int baud) {
 
 //Activate and deactivate serial connection.
 bool Mechanical::toggle(bool button) {
+  answered = false;
   if(button) {
     digitalWrite(ENABLEPIN,LOW);
     delay(TICK); //delay cautelar time before starting the communication.
@@ -276,7 +277,6 @@ bool Mechanical::toggle(bool button) {
       }
     }
     setStatus(LOCK);
-    infos += 2;
     return true;
   }else{
     Serial.end();
@@ -373,11 +373,11 @@ bool Mechanical::toggleLight(int intensity){
     inputNum = intensity;
   }
   String input = String(inputNum);
-  bool result = sendCommand("M03 S" + inputNum, IDLE,st,st);
+  bool result = sendCommand("M03 S" + input, IDLE,st,st);
   if (!result) return result;
   answered = true;
   expected += 2;
-  microServer->update("Light set to " + input);
+  //microServer->update("Light set to " + input);
   return true;
 }
 
@@ -431,6 +431,7 @@ void Mechanical::run(){
       + String(expected));
     restartAll();
     dogTriggered = true; //notify the next command to flush any possible serial leftover.
+    reset();
     st = LOCK; //force the user to make a homing before continuing.
   }
 }
