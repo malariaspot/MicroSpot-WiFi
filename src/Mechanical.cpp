@@ -327,6 +327,7 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
 
 //Interruptible movement
 bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
+  if(!answered) return false;
   String mode;
   if(R == "true"){
     mode = "G91";
@@ -418,7 +419,10 @@ bool Mechanical::askPos() {
 //Change the status of the machine.
 void Mechanical::setStatus(Status stat){
   st = stat;
-  if(!answered) microServer->update(statusToString(st));
+  if(!answered) {
+    microServer->update(statusToString(st));
+    answered = true;
+  }
 }
 
 void Mechanical::run(){
