@@ -64,7 +64,7 @@ void MicroServer::setup(String hostname) {
 }
 
 void MicroServer::run() {
-  newClient = serverWifi.available();
+  WiFiClient newClient = serverWifi.available();
   if (newClient) {
     while(!newClient.available()) { delay(1); }
     request = newClient.readStringUntil('\r');
@@ -75,7 +75,58 @@ void MicroServer::run() {
       url = request.substring(request.indexOf("GET ")+4, request.indexOf(" HTTP/"));      
     }
     
-    handleClient();
+    newClient.flush();
+
+    if (url == "/ayy/lmao") send(200, "Ayy Lmao", &newClient); 
+    else if (url == "/home") {
+
+      if (mechanical->homeAxis()) currentClient = newClient; 
+      else send(200, "Busy", &newClient);
+
+    }else if (url == "/stop") {
+
+      if (mechanical->stopJog()) currentClient = newClient;
+      else send(200, "Busy", &newClient);
+
+    }else if (url == "/position") {
+
+      currentClient = newClient;
+      mechanical->getPos();
+
+    }else if (url == "/move") {
+
+      if (hasArg("x") && hasArg("y") && hasArg("f")) {
+
+        if (mechanical->moveAxis(arg("x"),arg("y"),arg("f"))) currentClient = newClient; 
+        else send(200, "Busy", &newClient); 
+
+      }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+    }else if (url == "/jog") {
+
+      if (hasArg("x") && hasArg("y") && hasArg("f") && hasArg("r") && hasArg("s")) {
+
+        if (mechanical->jogAxis(arg("x"),arg("y"),arg("f"),arg("r"),arg("s"))) { 
+          currentClient = newClient; 
+        }else send(200, "Busy", &newClient); 
+
+      }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+    }else if(url == "/light"){
+      
+      if (hasArg("l")){
+        currentClient = newClient;
+        mechanical->toggleLight(arg("l").toInt());
+      }
+      
+    }else if(url == "/toggle"){
+      
+      if (hasArg("o")){
+        currentClient = newClient;
+        if(arg("o") == "1") mechanical->toggle(true);
+        else mechanical->toggle(false);
+      }
+      
+    }else send(404,url + " not found!", &newClient); 
+    //return;
   }
 }
 
@@ -93,61 +144,6 @@ String MicroServer::arg(String arg) {
 bool MicroServer::hasArg(String arg) {
   if (request.indexOf(arg+"=") != -1) return true;
   return false;
-}
-
-void MicroServer::handleClient() {
-  newClient.flush();
-
-  if (url == "/ayy/lmao") send(200, "Ayy Lmao", &newClient); 
-  else if (url == "/home") {
-
-    if (mechanical->homeAxis()) currentClient = newClient; 
-    else send(200, "Busy", &newClient);
-
-  }else if (url == "/stop") {
-
-    if (mechanical->stopJog()) currentClient = newClient;
-    else send(200, "Busy", &newClient);
-
-  }else if (url == "/position") {
-
-    currentClient = newClient;
-    mechanical->getPos();
-
-  }else if (url == "/move") {
-
-    if (hasArg("x") && hasArg("y") && hasArg("f")) {
-
-      if (mechanical->moveAxis(arg("x"),arg("y"),arg("f"))) currentClient = newClient; 
-      else send(200, "Busy", &newClient); 
-
-    }else send(404, "Error: One or more position arguments are missing!", &newClient); 
-  }else if (url == "/jog") {
-
-    if (hasArg("x") && hasArg("y") && hasArg("f") && hasArg("r") && hasArg("s")) {
-
-      if (mechanical->jogAxis(arg("x"),arg("y"),arg("f"),arg("r"),arg("s"))) { 
-        currentClient = newClient; 
-      }else send(200, "Busy", &newClient); 
-
-    }else send(404, "Error: One or more position arguments are missing!", &newClient); 
-  }else if(url == "/light"){
-    
-    if (hasArg("l")){
-      currentClient = newClient;
-      mechanical->toggleLight(arg("l").toInt());
-    }
-    
-  }else if(url == "/toggle"){
-    
-    if (hasArg("o")){
-      currentClient = newClient;
-      if(arg("o") == "1") mechanical->toggle(true);
-      else mechanical->toggle(false);
-    }
-    
-  }else send(404,url + " not found!", &newClient); 
-  //return;
 }
 
 void MicroServer::send(int code, String msg, WiFiClient * client) { 

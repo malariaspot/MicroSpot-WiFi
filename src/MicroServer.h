@@ -25,12 +25,10 @@ class MicroServer {
 		Mechanical *mechanical; //Mechanical object
 		FileManager fileManager; //Config file manager
 		WiFiClient currentClient; //client for mechanical
-		WiFiClient newClient; //CASUL client
 		String request; //Request sent
 		String url; //URL segment of the request
 		String arg(String arg); //Returns requested argument
 		bool hasArg(String arg); //Checks if requested argument exists
-		void handleClient(); //handles the client if he exists
 		void send(int code ,String msg, WiFiClient * client); //Sends a responce message to a specific client
 		
 };
