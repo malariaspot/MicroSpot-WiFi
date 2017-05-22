@@ -84,13 +84,10 @@ void MicroServer::update(String msg) { send(msg, &currentClient); }
 /* PRIVATE */
 
 String MicroServer::arg(String arg) {
-  int end;
-  if (request.indexOf(" ",request.indexOf(arg + "="))) {
-    end = request.indexOf(" ",request.indexOf(arg + "="));
-  }else if (request.indexOf("&",request.indexOf(arg + "="))) {
-    end = request.indexOf("&",request.indexOf(arg + "="));
-  }
-  return request.substring(request.indexOf(arg+"=")+2, end);
+  int beginning = request.indexOf(arg)+2;
+  int end = request.indexOf("&",beginning);
+  if (end < 0) return request.substring(beginning, request.indexOf(" HTTP/"));
+  return request.substring(beginning, end);
 }
 
 bool MicroServer::hasArg(String arg) {
@@ -101,17 +98,16 @@ bool MicroServer::hasArg(String arg) {
 void MicroServer::handleClient() {
   newClient.flush();
 
-  if (url == "/ayy/lmao") {
-    send("Ayy Lmao", &newClient);
-  }else if (url == "/home") {
+  if (url == "/ayy/lmao") send("Ayy Lmao", &newClient); 
+  else if (url == "/home") {
 
-    if (mechanical->homeAxis()) { currentClient = newClient; }
-    else{ send("Busy", &newClient); }
+    if (mechanical->homeAxis()) currentClient = newClient; 
+    else send("Busy", &newClient);
 
   }else if (url == "/stop") {
 
-    if (mechanical->stopJog()) { currentClient = newClient; }
-    else{ send("Busy", &newClient); }
+    if (mechanical->stopJog()) currentClient = newClient;
+    else send("Busy", &newClient);
 
   }else if (url == "/position") {
 
@@ -120,25 +116,22 @@ void MicroServer::handleClient() {
 
   }else if (url == "/move") {
 
-    if (hasArg("x") && hasArg("y") && hasArg("f")) { 
+    if (hasArg("x") && hasArg("y") && hasArg("f")) {
 
-      if (mechanical->moveAxis(arg("x"),arg("y"),arg("f"))) { 
-        currentClient = newClient; 
-      }else{ send("Busy", &newClient); }
+      if (mechanical->moveAxis(arg("x"),arg("y"),arg("f"))) currentClient = newClient; 
+      else send("Busy", &newClient); 
 
-    }else{ send("Error: One or more position arguments are missing!", &newClient); }
-
+    }else send("Error: One or more position arguments are missing!", &newClient); 
   }else if (url == "/jog") {
 
     if (hasArg("x") && hasArg("y") && hasArg("f") && hasArg("r") && hasArg("s")) {
 
       if (mechanical->jogAxis(arg("x"),arg("y"),arg("f"),arg("r"),arg("s"))) { 
         currentClient = newClient; 
-      }else{ send("Busy", &newClient); }
+      }else send("Busy", &newClient); 
 
-    }else{ send("Error: One or more position arguments are missing!", &newClient); }
-
-  }else{ send(url + " not found!", &newClient); }
+    }else send("Error: One or more position arguments are missing!", &newClient); 
+  }else send(url + " not found!", &newClient); 
   //return;
 }
 
