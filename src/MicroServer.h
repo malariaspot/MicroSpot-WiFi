@@ -31,7 +31,7 @@ class MicroServer {
 		String arg(String arg); //Returns requested argument
 		bool hasArg(String arg); //Checks if requested argument exists
 		void handleClient(); //handles the client if he exists
-		void send(String msg, WiFiClient * client); //Sends a responce message to a specific client
+		void send(int code ,String msg, WiFiClient * client); //Sends a responce message to a specific client
 		
 };
 

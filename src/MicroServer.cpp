@@ -79,7 +79,7 @@ void MicroServer::run() {
   }
 }
 
-void MicroServer::update(String msg) { send(msg, &currentClient); }
+void MicroServer::update(String msg) { send(200, msg, &currentClient); }
 
 /* PRIVATE */
 
@@ -98,16 +98,16 @@ bool MicroServer::hasArg(String arg) {
 void MicroServer::handleClient() {
   newClient.flush();
 
-  if (url == "/ayy/lmao") send("Ayy Lmao", &newClient); 
+  if (url == "/ayy/lmao") send(200, "Ayy Lmao", &newClient); 
   else if (url == "/home") {
 
     if (mechanical->homeAxis()) currentClient = newClient; 
-    else send("Busy", &newClient);
+    else send(200, "Busy", &newClient);
 
   }else if (url == "/stop") {
 
     if (mechanical->stopJog()) currentClient = newClient;
-    else send("Busy", &newClient);
+    else send(200, "Busy", &newClient);
 
   }else if (url == "/position") {
 
@@ -119,25 +119,26 @@ void MicroServer::handleClient() {
     if (hasArg("x") && hasArg("y") && hasArg("f")) {
 
       if (mechanical->moveAxis(arg("x"),arg("y"),arg("f"))) currentClient = newClient; 
-      else send("Busy", &newClient); 
+      else send(200, "Busy", &newClient); 
 
-    }else send("Error: One or more position arguments are missing!", &newClient); 
+    }else send(404, "Error: One or more position arguments are missing!", &newClient); 
   }else if (url == "/jog") {
 
     if (hasArg("x") && hasArg("y") && hasArg("f") && hasArg("r") && hasArg("s")) {
 
       if (mechanical->jogAxis(arg("x"),arg("y"),arg("f"),arg("r"),arg("s"))) { 
         currentClient = newClient; 
-      }else send("Busy", &newClient); 
+      }else send(200, "Busy", &newClient); 
 
-    }else send("Error: One or more position arguments are missing!", &newClient); 
-  }else send(url + " not found!", &newClient); 
+    }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+  }else send(404,url + " not found!", &newClient); 
   //return;
 }
 
-void MicroServer::send(String msg, WiFiClient * client) { 
-  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
-    + msg + "\r\n";
+void MicroServer::send(int code, String msg, WiFiClient * client) { 
+  String s = "HTTP/1.1 " 
+    + String(code) + " OK\r\nContent-Type: application/json\r\n\r\n"
+    + msg;
 
   client->flush();
   client->print(s);
