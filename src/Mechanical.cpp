@@ -1,6 +1,7 @@
 #include "Mechanical.h"
 #include "MicroServer.h"
 #include "charUtils.h"
+#include <stdint.h>
 
 #define TIMEOUT 4000
 #define REQUESTLIMIT 200
@@ -12,7 +13,7 @@
 /////////////////////////////////////////
 
 #define ENABLEPIN 4
-#define ENDLINE '\r'
+#define ENDLINE '\n'
 #define BUFFERSIZE 512
 #define SERIAL_FRAMERATE 25
 
@@ -53,6 +54,7 @@ void Mechanical::errorHandler(int errNum){
     case 12:
     case 13:
     case 14:
+      break;
     case 15:
       answered = true;
       microServer->update("Jog out of bounds");
