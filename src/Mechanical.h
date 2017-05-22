@@ -41,6 +41,8 @@ class Mechanical {
     void restartAll();
     //Analyze the error and act in consequence.
     void errorHandler(int errNum);
+    //Analyze the alarm and act in consequence.
+    void alarmHandler(int alarmNum);
 
     String statusToString(Status status) {
         switch (status) {
@@ -67,6 +69,9 @@ class Mechanical {
 
     //Serial activation and release
     bool toggle(bool state); //Turn on or off the serial interface
+    
+    //Reset GRBL
+    bool reset();
 
     //Movement
     bool homeAxis(); //Take axis to home position.
