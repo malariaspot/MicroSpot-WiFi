@@ -24,10 +24,11 @@ double timeStamp;
 double serialStamp;
 double watchDogStamp;
 bool dogWatching, dogTriggered;
-bool posOutdated;
+bool posOutdated, answered;
 char xBuffer[7];
 char yBuffer[7];
 Position afterPos;
+String lastCommand;
 
 
 /////////////////////////////////////////
@@ -38,7 +39,9 @@ void Mechanical::errorHandler(int errNum){
   switch(errNum){
     case 1:
     case 2:
-    case 3:
+      answered = true;
+      microServer->update("GRBL didn't understand: " + lastCommand);
+      break;
     case 4:
     case 5:
     case 6:
@@ -51,6 +54,7 @@ void Mechanical::errorHandler(int errNum){
     case 13:
     case 14:
     case 15:
+      answered = true;
       microServer->update("Jog out of bounds");
       break;
     case 16:
@@ -78,6 +82,7 @@ void Mechanical::errorHandler(int errNum){
     default:
       break;
   }
+  return;
 }
 
 void Mechanical::restartAll(){
@@ -128,7 +133,7 @@ MsgType msgClassify(int from, char * msg){
     return ALARM;
   }else if(getCharIndex(from, msg, "Grbl") >= 0){
     return HANDSHAKE;
-  }else if(getCharIndex(from, msg, "\r" == 0)){
+  }else if(getCharIndex(from, msg, "\r") == from){
     return EMPTYLINE;
   }else if(getCharIndex(from, msg, "[") >= 0){
     return NQMESSAGE;
@@ -171,9 +176,11 @@ void Mechanical::serialListen(){
           pos.x = String(xBuffer);
           pos.y = String(yBuffer);
           microServer->update("Position: X: " + pos.x + " Y: " + pos.y);
+          answered = true;
           break;
         case ALARM:
           microServer->update("GRBL Alarm response. HALT!");
+          answered = true;
           restartAll();
           st = LOCK;
           break;
@@ -185,6 +192,7 @@ void Mechanical::serialListen(){
           break;
         default:
           microServer->update("WRONG RESPONSE: " + String(serialBuffer));
+          answered = true;
           restartAll();
           break;
       }
@@ -205,6 +213,8 @@ void Mechanical::serialListen(){
 bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
   if(st >= atLeast) {
     if(dogTriggered){flush(); dogTriggered = false;}
+    lastCommand = command;
+    answered = false;
     this->after.success = success;
     this->after.failure = failure;
     watchDogStamp = millis();
@@ -247,6 +257,7 @@ Mechanical::Mechanical(int baud) {
   bufferIndex = 0;
   lastIndex = 0;
   infos = 0;
+  answered = true;
   longWait = false;
   this->st = OFF;
   serialStamp = millis();
@@ -330,7 +341,7 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
   bool result = sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + 
   " F" + F, JOGGING, JOGGING, ERROR);
   if(!result) return result;
-  expected += 2;
+  expected += 4;
   posOutdated = true;
   return result;
 }
@@ -404,7 +415,7 @@ bool Mechanical::askPos() {
 //Change the status of the machine.
 void Mechanical::setStatus(Status stat){
   st = stat;
-  microServer->update(statusToString(st));
+  if(!answered) microServer->update(statusToString(st));
 }
 
 void Mechanical::run(){
