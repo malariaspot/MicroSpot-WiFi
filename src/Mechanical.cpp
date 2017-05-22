@@ -36,52 +36,45 @@ String lastCommand;
 // Internal status management
 /////////////////////////////////////////
 
-void Mechanical::errorHandler(int errNum){
-  switch(errNum){
+void Mechanical::alarmHandler(int alarmNum){
+  switch(alarmNum){
     case 1:
     case 2:
-      answered = true;
-      microServer->update("GRBL didn't understand: " + lastCommand);
-      break;
+    case 3:
     case 4:
     case 5:
+      reset();
+      break;
     case 6:
     case 7:
     case 8:
     case 9:
-    case 10:
-    case 11:
-    case 12:
-    case 13:
-    case 14:
+    default:
+      break;
+  }
+}
+
+void Mechanical::errorHandler(int errNum){
+  switch(errNum){
+    case 1:
+    case 2:
+    case 20:
+    case 16:
+    case 3:
+      answered = true;
+      microServer->update("GRBL didn't understand: " + lastCommand);
+      break;
+    case 9:
+      microServer->update("GRBL is locked. Home to release");
+      st = LOCK;
       break;
     case 15:
       answered = true;
       microServer->update("Jog out of bounds");
       break;
-    case 16:
-    case 17:
-    case 18:
-    case 19:
-    case 20:
-    case 21:
-    case 22:
-    case 23:
-    case 24:
-    case 25:
-    case 26:
-    case 27:
-    case 28:
-    case 29:
-    case 30:
-    case 31:
-    case 32:
-    case 33:
-    case 34:
-    case 35:
-    case 36:
-    case 37:
     default:
+      answered = true;
+      microServer->update("Error " + String(errNum) + " ocurred");
       break;
   }
   return;
@@ -181,7 +174,8 @@ void Mechanical::serialListen(){
           answered = true;
           break;
         case ALARM:
-          microServer->update("GRBL Alarm response. HALT!");
+          microServer->update("GRBL Alarm : " + String(serialBuffer[lastIndex + 6]));
+          reset();
           answered = true;
           restartAll();
           st = LOCK;
@@ -385,6 +379,10 @@ bool Mechanical::toggleLight(int intensity){
   expected += 2;
   microServer->update("Light set to " + input);
   return true;
+}
+
+bool Mechanical::reset(){
+  Serial.println("\x18");
 }
 
 ////////////////////
