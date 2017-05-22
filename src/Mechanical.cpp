@@ -277,6 +277,7 @@ bool Mechanical::toggle(bool button) {
       }
     }
     setStatus(LOCK);
+    homeAxis();
     return true;
   }else{
     Serial.end();
