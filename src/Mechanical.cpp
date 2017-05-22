@@ -365,7 +365,7 @@ bool Mechanical::unlockAxis() {
   return result;
 }
 
-void Mechanical::toggleLight(int intensity){
+bool Mechanical::toggleLight(int intensity){
   int inputNum;
   //saturate intensity between 0 and 255.
   //Not using just min() and max() seems uncanny, 
@@ -379,9 +379,12 @@ void Mechanical::toggleLight(int intensity){
     inputNum = intensity;
   }
   String input = String(inputNum);
-  Serial.println("M03 S" + input);
-  flush();
+  bool result = sendCommand("M03 S" + inputNum, IDLE,st,st);
+  if (!result) return result;
+  answered = true;
+  expected += 2;
   microServer->update("Light set to " + input);
+  return true;
 }
 
 ////////////////////

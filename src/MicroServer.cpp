@@ -131,6 +131,13 @@ void MicroServer::handleClient() {
       }else send(200, "Busy", &newClient); 
 
     }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+  }else if(url == "/light"){
+    
+    if (hasArg("l")){
+      currentClient = newClient;
+      mechanical->toggleLight(arg("l").toInt());
+    }
+    
   }else send(404,url + " not found!", &newClient); 
   //return;
 }
