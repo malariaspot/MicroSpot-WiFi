@@ -369,7 +369,7 @@ bool Mechanical::uniJog(String coord, String F){
 
 //stop jogging movement.
 bool Mechanical::stopJog() {
-  bool result = sendCommand("\x85",MOVING,IDLE,ERROR);
+  bool result = sendCommand("\x85",JOGGING,IDLE,ERROR);
   if(!result) return result;
   expected += 2;
   posOutdated = true;
