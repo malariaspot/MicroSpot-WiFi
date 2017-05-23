@@ -316,7 +316,7 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
   bool result = sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
   IDLE,IDLE,ERROR);
   if(!result) return result;
-  st == MOVING;
+  st = MOVING;
   expected += 4;
   //this command can take a while to confirm.
   longWait = true;

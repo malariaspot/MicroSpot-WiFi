@@ -81,7 +81,7 @@ void MicroServer::run() {
     else if (url == "/home") {
 
       if (mechanical->homeAxis()) currentClient = newClient; 
-      else send(200, "Busy", &newClient);
+      else send(200, "Busy for home", &newClient);
 
     }else if (url == "/stop") {
 
@@ -98,7 +98,7 @@ void MicroServer::run() {
       if (hasArg("x") && hasArg("y") && hasArg("f")) {
 
         if (mechanical->moveAxis(arg("x"),arg("y"),arg("f"))) currentClient = newClient; 
-        else send(200, "Busy", &newClient); 
+        else send(200, "Busy for move", &newClient); 
 
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
     }else if (url == "/jog") {
