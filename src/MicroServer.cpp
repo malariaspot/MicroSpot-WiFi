@@ -88,21 +88,15 @@ void MicroServer::run() {
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
     }else if (url == "/ayy/lmao") {
       send(200, "Ayy Lmao", &newClient);
-    }
-    else if (url == "/home") {
-
-      if (mechanical->homeAxis()) currentClient = newClient; 
-      else send(200, "Busy for home", &newClient);
-
     }else if (url == "/stop") {
 
       if (mechanical->stopJog()) currentClient = newClient;
       else send(200, "Busy", &newClient);
 
-    }else if (url == "/position") {
+    }else if (url == "/home") {
 
-      currentClient = newClient;
-      mechanical->getPos();
+      if (mechanical->homeAxis()) currentClient = newClient; 
+      else send(200, "Busy for home", &newClient);
 
     }else if (url == "/move") {
 
@@ -121,6 +115,10 @@ void MicroServer::run() {
         }else send(200, "Busy", &newClient); 
 
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+      
+    }else if (url == "/position") {
+      currentClient = newClient;
+      mechanical->getPos();
     }else if(url == "/light"){
       
       if (hasArg("l")){
