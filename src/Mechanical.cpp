@@ -355,6 +355,17 @@ bool Mechanical::panAxis(String X, String Y, String F) {
   return result;
 }
 
+bool Mechanical::uniJog(String coord, String F){
+  if(!answered) return false;
+  String destination = (coord[0] == '-') ? "0" : 
+                        (coord[1] == 'X') ? maxpos.x : maxpos.y;
+  bool result = sendCommand("$J=G90 " + String(coord[1]) + destination +
+  " F" + F, JOGGING, JOGGING, ERROR);
+  if(!result) return result;
+  expected += 2;
+  posOutdated = true;
+  return result;
+}
 
 //stop jogging movement.
 bool Mechanical::stopJog() {

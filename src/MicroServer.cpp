@@ -86,6 +86,14 @@ void MicroServer::run() {
         }else send(200, "Busy", &newClient); 
 
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+    }else if (url == "/uniJog"){
+      if (hasArg("c") && hasArg("f")) {
+
+        if (mechanical->uniJog(arg("c"),arg("f"))) { 
+          currentClient = newClient; 
+        }else send(200, "Busy", &newClient); 
+
+      }else send(404, "Error: One or more position arguments are missing!", &newClient); 
     }else if (url == "/ayy/lmao") {
       send(200, "Ayy Lmao", &newClient);
     }else if (url == "/stop") {
