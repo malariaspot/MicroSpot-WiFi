@@ -77,7 +77,18 @@ void MicroServer::run() {
     
     newClient.flush();
 
-    if (url == "/ayy/lmao") send(200, "Ayy Lmao", &newClient); 
+    if (url == "/pan"){
+      
+      if (hasArg("x") && hasArg("y") && hasArg("f")) {
+
+        if (mechanical->panAxis(arg("x"),arg("y"),arg("f"))) { 
+          currentClient = newClient; 
+        }else send(200, "Busy", &newClient); 
+
+      }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+    }else if (url == "/ayy/lmao") {
+      send(200, "Ayy Lmao", &newClient);
+    }
     else if (url == "/home") {
 
       if (mechanical->homeAxis()) currentClient = newClient; 

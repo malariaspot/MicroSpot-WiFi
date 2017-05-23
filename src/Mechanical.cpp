@@ -344,6 +344,18 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
   return result;
 }
 
+//axis panning
+bool Mechanical::panAxis(String X, String Y, String F) {
+  if(!answered) return false;
+  bool result = sendCommand("\x85\r\n$J=G91 X" + X + " Y" + Y + 
+  " F" + F, JOGGING, JOGGING, ERROR);
+  if(!result) return result;
+  expected += 4;
+  posOutdated = true;
+  return result;
+}
+
+
 //stop jogging movement.
 bool Mechanical::stopJog() {
   bool result = sendCommand("\x85",MOVING,IDLE,ERROR);

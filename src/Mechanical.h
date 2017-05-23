@@ -77,6 +77,7 @@ class Mechanical {
     bool homeAxis(); //Take axis to home position.
     bool moveAxis(String X, String Y, String F); //Ininterruptible move to (X,Y) at speed F.
     bool jogAxis(String X,String Y,String F, String R, String s); //Interruptible move to (X,Y) at speed F.
+    bool panAxis(String X, String Y, String F); //fast jogging for panning.
     bool stopJog();  //Stop an interruptible movement.
     bool unlockAxis(); //Send and unlock token to GRBL. Breaks stability. Devs only.
     bool toggleLight(int intensity); //turn on or off the lights.
