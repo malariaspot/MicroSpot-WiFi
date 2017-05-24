@@ -30,6 +30,7 @@ char xBuffer[7];
 char yBuffer[7];
 Position afterPos;
 String lastCommand;
+WiFiClient askClient;
 
 
 /////////////////////////////////////////
@@ -170,8 +171,7 @@ void Mechanical::serialListen(){
           strncpy(yBuffer, serialBuffer + b + 1, c - b -1);
           pos.x = String(xBuffer);
           pos.y = String(yBuffer);
-          microServer->update("Position: X: " + pos.x + " Y: " + pos.y);
-          answered = true;
+          microServer->send(200,"Position: X: " + pos.x + " Y: " + pos.y, &askClient);
           break;
         case ALARM:
           microServer->update("GRBL Alarm : " + String(serialBuffer[lastIndex + 6]));
@@ -416,15 +416,16 @@ bool Mechanical::reset(){
 ////////////////////
 
 //Report position
-bool Mechanical::getPos() {
+bool Mechanical::getPos(WiFiClient client) {
   String notice;
+  askClient = client;
   if(posOutdated){
     askPos();
   }
   else
   {
     notice = "X: "  + pos.x + " Y: " + pos.y;
-    microServer->update(notice);
+    microServer->send(200,notice, &askClient);
   }
   return true;
 }

@@ -5,6 +5,7 @@
 #include "Arduino.h"
 #include "Position.h"
 #include "Status.h"
+#include <WiFiClient.h>
 
 #define MAX_X "50"
 #define MAX_Y "15"
@@ -84,7 +85,7 @@ class Mechanical {
     bool toggleLight(int intensity); //turn on or off the lights.
 
     //Status reporting
-    bool getPos(); //Reports current position.
+    bool getPos(WiFiClient client); //Reports current position.
     int getStatus(); //Returns a number corresponding the status.
 
     void addObserver(MicroServer * ms); //ADDED - for the observation pattern

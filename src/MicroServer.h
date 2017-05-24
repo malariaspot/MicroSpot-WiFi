@@ -18,6 +18,7 @@ class MicroServer {
 		void run(); //Loop
 		void setup(String hostname); //init
 		void update(String msg); //Event handler
+		void send(int code ,String msg, WiFiClient * client); //Sends a responce message to a specific client
 
 	private: 
 
@@ -29,7 +30,6 @@ class MicroServer {
 		String url; //URL segment of the request
 		String arg(String arg); //Returns requested argument
 		bool hasArg(String arg); //Checks if requested argument exists
-		void send(int code ,String msg, WiFiClient * client); //Sends a responce message to a specific client
 		
 };
 

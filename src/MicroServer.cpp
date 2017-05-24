@@ -125,8 +125,7 @@ void MicroServer::run() {
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
       
     }else if (url == "/position") {
-      currentClient = newClient;
-      mechanical->getPos();
+      mechanical->getPos(newClient);
     }else if(url == "/light"){
       
       if (hasArg("l")){
