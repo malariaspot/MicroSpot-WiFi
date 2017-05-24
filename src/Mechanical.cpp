@@ -31,6 +31,7 @@ char yBuffer[7];
 Position afterPos;
 String lastCommand;
 WiFiClient askClient;
+float max_x,max_y;
 
 
 /////////////////////////////////////////
@@ -244,6 +245,8 @@ Mechanical::Mechanical(int baud) {
   this->baudios = baud;
   maxpos.x = MAX_X;
   maxpos.y = MAX_Y;
+  max_x = maxpos.x.toFloat();
+  max_y = maxpos.y.toFloat();
   pos.x = "";
   pos.y = "";
   afterPos.x = "";
@@ -310,6 +313,7 @@ bool Mechanical::homeAxis() {
 bool Mechanical::moveAxis(String X, String Y, String F) {
   //using norm 1 for speed purposes.
   //That turns that 70000 into a magic number.
+  if(X.toFloat() > max_x || Y.toFloat() > max_y) return false;
   if(70000.0*(X.toFloat() + Y.toFloat())/F.toFloat() > WATCHDOG_LIMIT){
     return false;
   }
