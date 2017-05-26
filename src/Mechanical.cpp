@@ -316,7 +316,7 @@ bool Mechanical::homeAxis() {
 bool Mechanical::moveAxis(char * request, int x, int y, int f) {
   //using norm 1 for speed purposes.
   //That turns that 70000 into a magic number.
-  strncpy(reqBuffer,request,getCharIndex(request, " HTTP"));
+  strcpy(reqBuffer, request);
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
   float xCoord = atof(reqBuffer + x + 1);
@@ -347,7 +347,7 @@ bool Mechanical::moveAxis(char * request, int x, int y, int f) {
 //Interruptible movement
 bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
   if(!answered) return false;
-  strncpy(reqBuffer,request,getCharIndex(request, " HTTP"));
+  strcpy(reqBuffer, request);
   String mode;
   if(getCharIndex(r,reqBuffer,"true")){
     mode = "G91";
@@ -375,7 +375,7 @@ bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
 //axis panning
 bool Mechanical::panAxis(char * request, int x, int y, int f) {
   if(!answered) return false;
-  strncpy(reqBuffer, request, getCharIndex(request, " HTTP"));
+  strcpy(reqBuffer, request);
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
   bool result = sendCommand("\x85\r\n$J=G91 X" 
@@ -391,7 +391,7 @@ bool Mechanical::panAxis(char * request, int x, int y, int f) {
 
 bool Mechanical::uniJog(char * request, int c, int f){
   if(!answered) return false;
-  strncpy(reqBuffer, request, getCharIndex(request, " HTTP"));
+  strcpy(reqBuffer, request);
   reqBuffer[f -1] = '\0';
   String Coord = String(reqBuffer + c + 2);
   String F = String(reqBuffer + f + 2);
@@ -424,7 +424,7 @@ bool Mechanical::unlockAxis() {
 
 bool Mechanical::toggleLight(char * request, int l){
   int inputNum;
-  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
+  strcpy(reqBuffer,request);
   String input = String(reqBuffer + l + 2);
   inputNum = input.toInt();
   //saturate intensity between 0 and 255.
@@ -439,7 +439,7 @@ bool Mechanical::toggleLight(char * request, int l){
   if (!result) return result;
   answered = true;
   expected += 2;
-  //microServer->update("Light set to " + input);
+  microServer->update("Light set to " + input);
   return true;
 }
 

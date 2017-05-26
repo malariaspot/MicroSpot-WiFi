@@ -81,7 +81,7 @@ void MicroServer::run() {
 
     int questionMarkIndex = getCharIndex(requestBuffer, "?");
     int httpIndex = getCharIndex(requestBuffer, " HTTP/");
- 
+    requestBuffer[httpIndex] = '\0'; //crop the end of the request.
     if (questionMarkIndex > -1) strncpy(urlBuffer, requestBuffer+4, questionMarkIndex-3);
     else strncpy(urlBuffer, requestBuffer+4, httpIndex-3);
     
@@ -151,8 +151,9 @@ void MicroServer::run() {
       if (l > -1){
         currentClient = newClient;
         mechanical->toggleLight(requestBuffer,l);
+      }else{
+        send(404, "Error: Wrong argument in light!", &newClient); 
       }
-      
     }else if(getCharIndex(urlBuffer, "/toggle") > -1){
       
       int o = arg("o=");
