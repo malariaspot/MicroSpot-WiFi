@@ -19,7 +19,6 @@
 
 int bufferIndex, lastIndex;
 char serialBuffer[BUFFERSIZE];
-char inputChar;
 int expected, infos;
 double timeStamp;
 double serialStamp;
@@ -148,10 +147,9 @@ MsgType msgClassify(int from, char * msg){
 void Mechanical::serialListen(){
 //transmit messages from serial.
   while(Serial.available() > 0){
-    inputChar = Serial.read();
-    serialBuffer[bufferIndex] = inputChar;
+    serialBuffer[bufferIndex] = Serial.read();
     bufferIndex++;
-    if(inputChar == ENDLINE){
+    if(serialBuffer[bufferIndex] == ENDLINE){
       serialBuffer[bufferIndex] = '\0';
       switch(msgClassify(lastIndex, serialBuffer)){
         case AFFIRMATIVE:
@@ -168,10 +166,11 @@ void Mechanical::serialListen(){
           b = getCharIndex(a + 1, serialBuffer, ",");
           c = getCharIndex(b + 1, serialBuffer, ",");
           d = getCharIndex(c + 1, serialBuffer, ",");
-          strncpy(xBuffer, serialBuffer + a + 1, b - a -1);
-          strncpy(yBuffer, serialBuffer + b + 1, c - b -1);
-          pos.x = String(xBuffer);
-          pos.y = String(yBuffer);
+          serialBuffer[b] = '\0';
+          serialBuffer[c] = '\0';
+          serialBuffer[d] = '\0';
+          pos.x = String(serialBuffer + a + 1);
+          pos.y = String(serialBuffer + b + 1);
           microServer->send(200,"Position: X: " + pos.x + " Y: " + pos.y, &askClient);
           break;
         case ALARM:
