@@ -394,9 +394,10 @@ bool Mechanical::uniJog(char * request, int c, int f){
   strncpy(request,requestBuffer,getCharIndex(request, " HTTP"));
   requestBuffer[f -1] = '\0';
   String Coord = String(requestBuffer + c + 2);
+  String F = String(requestBuffer + f + 2);
   String destination = (Coord[0] == '-') ? "0" : 
                         (Coord[1] == 'X') ? maxpos.x : maxpos.y;
-  bool result = sendCommand("$J=G90 " + String(coord[1]) + destination +
+  bool result = sendCommand("$J=G90 " + String(Coord[1]) + destination +
   " F" + F, JOGGING, JOGGING, ERROR);
   if(!result) return result;
   expected += 2;

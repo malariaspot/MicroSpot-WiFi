@@ -100,7 +100,7 @@ void MicroServer::run() {
     }else if (getCharIndex(urlBuffer, "/uniJog") > -1){
 
       int c = arg("c=");
-      int f = arg("f=")
+      int f = arg("f=");
       if (c > -1 && f > -1) {
         if (mechanical->uniJog(requestBuffer,c,f)) currentClient = newClient; 
         else send(200, "Busy", &newClient); 
@@ -110,7 +110,7 @@ void MicroServer::run() {
 
       send(200, "Ayy Lmao", &newClient);
 
-    }else if (url == "/stop") {
+    }else if (getCharIndex(urlBuffer,"/stop") > -1) {
 
       if (mechanical->stopJog()) currentClient = newClient;
       else send(200, "Busy", &newClient);
@@ -130,7 +130,7 @@ void MicroServer::run() {
         else send(200, "Busy for move", &newClient); 
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
 
-    }else if (url == "/jog") {
+    }else if (getCharIndex(urlBuffer,"/jog")) {
 
       int x = arg("x=");
       int y = arg("y=");
