@@ -3,8 +3,7 @@
 
 
 #include "Arduino.h"
-#include "Position.h"
-#include "Status.h"
+#include "MechTypes.h"
 #include <WiFiClient.h>
 
 #define MAX_X "50"

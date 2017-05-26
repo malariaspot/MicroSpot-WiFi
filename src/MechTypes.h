@@ -1,5 +1,5 @@
-#ifndef STATUS_H
-#define STATUS_H
+#ifndef TYPES_H
+#define TYPES_H
 
 enum Status{
   OFF, //Enable pin is off.
@@ -12,4 +12,23 @@ enum Status{
   IDLE //GRBL is sitting idle, and the position has been reported by the machine.
 };
 
-#endif //STATUS_H
+enum MsgType{
+  POSITION, //status and position report
+  AFFIRMATIVE, //this is an "ok"
+  ERRONEOUS, //this is an error report
+  ALARM, //ALARM report.
+  HANDSHAKE, //Initial handshake, after restart.
+  MEMORY, //information fomr EEPROM
+  NQMESSAGE, //Non queried message
+  STARTUP, // startup routine stored in GRBL
+  EMPTYLINE, //GRBL sent an empty line.
+  DIRTY // dirty message, unparseable.
+};
+
+struct Position{
+  String x;
+  String y;
+};
+
+
+#endif //TYPES_H

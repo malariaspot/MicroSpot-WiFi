@@ -29,8 +29,6 @@ double serialStamp;
 double watchDogStamp;
 bool dogWatching, dogTriggered;
 bool posOutdated, answered;
-char xBuffer[7];
-char yBuffer[7];
 Position afterPos;
 String lastCommand;
 WiFiClient askClient;
@@ -95,20 +93,6 @@ void Mechanical::restartAll(){
     flush();
 }
 
-
-
-enum MsgType{
-  POSITION, //status and position report
-  AFFIRMATIVE, //this is an "ok"
-  ERRONEOUS, //this is an error report
-  ALARM, //ALARM report.
-  HANDSHAKE, //Initial handshake, after restart.
-  MEMORY, //information fomr EEPROM
-  NQMESSAGE, //Non queried message
-  STARTUP, // startup routine stored in GRBL
-  EMPTYLINE, //GRBL sent an empty line.
-  DIRTY // dirty message, unparseable.
-};
 
 /////////////////////
 //                 //
