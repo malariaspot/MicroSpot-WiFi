@@ -316,12 +316,12 @@ bool Mechanical::homeAxis() {
 bool Mechanical::moveAxis(char * request, int x, int y, int f) {
   //using norm 1 for speed purposes.
   //That turns that 70000 into a magic number.
-  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
+  strncpy(reqBuffer,request,getCharIndex(request, " HTTP"));
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
-  float xCoord = atof(reqBuffer + x + 2);
-  float yCoord = atof(reqBuffer + y + 2);
-  float fSpeed = atof(reqBuffer + f + 2);
+  float xCoord = atof(reqBuffer + x + 1);
+  float yCoord = atof(reqBuffer + y + 1);
+  float fSpeed = atof(reqBuffer + f + 1);
   if(xCoord > max_x || yCoord > max_y) return false;
   if(70000.0*(xCoord + yCoord)/fSpeed > WATCHDOG_LIMIT){
     return false;
@@ -347,7 +347,7 @@ bool Mechanical::moveAxis(char * request, int x, int y, int f) {
 //Interruptible movement
 bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
   if(!answered) return false;
-  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
+  strncpy(reqBuffer,request,getCharIndex(request, " HTTP"));
   String mode;
   if(getCharIndex(r,reqBuffer,"true")){
     mode = "G91";
@@ -375,7 +375,7 @@ bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
 //axis panning
 bool Mechanical::panAxis(char * request, int x, int y, int f) {
   if(!answered) return false;
-  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
+  strncpy(reqBuffer, request, getCharIndex(request, " HTTP"));
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
   bool result = sendCommand("\x85\r\n$J=G91 X" 
@@ -391,7 +391,7 @@ bool Mechanical::panAxis(char * request, int x, int y, int f) {
 
 bool Mechanical::uniJog(char * request, int c, int f){
   if(!answered) return false;
-  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
+  strncpy(reqBuffer, request, getCharIndex(request, " HTTP"));
   reqBuffer[f -1] = '\0';
   String Coord = String(reqBuffer + c + 2);
   String F = String(reqBuffer + f + 2);
