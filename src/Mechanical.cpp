@@ -30,7 +30,6 @@ double watchDogStamp;
 bool dogWatching, dogTriggered;
 bool posOutdated, answered;
 Position afterPos;
-String lastCommand;
 WiFiClient askClient;
 float max_x,max_y;
 
@@ -65,7 +64,7 @@ void Mechanical::errorHandler(int errNum){
     case 16:
     case 3:
       answered = true;
-      microServer->update("GRBL didn't understand: " + lastCommand);
+      microServer->update("GRBL didn't understand: " + String(GRBLcommand));
       break;
     case 9:
       microServer->update("GRBL is locked. Home to release");
@@ -194,16 +193,15 @@ void Mechanical::serialListen(){
 
 //Safely send a command, under certain conditions, with certain consequences,
 //and expecting or not, a response that will be stored in a Line list.
-bool Mechanical::sendCommand(String command, Status atLeast, Status success, Status failure) {
+bool Mechanical::sendCommand(Status atLeast, Status success, Status failure) {
   if(st >= atLeast) {
     if(dogTriggered){flush(); dogTriggered = false;}
-    lastCommand = command;
     answered = false;
     this->after.success = success;
     this->after.failure = failure;
     watchDogStamp = millis();
     dogWatching = true;
-    Serial.println(command);
+    Serial.println(GRBLcommand);
     return true;
   }else{
     return false;
@@ -284,7 +282,8 @@ bool Mechanical::toggle(bool button) {
 
 //Home the axes
 bool Mechanical::homeAxis() {
-  bool result = sendCommand("$h",LOCK,IDLE,ERROR);
+  strcpy(GRBLcommand, "$h");
+  bool result = sendCommand(LOCK,IDLE,ERROR);
   if(!result) return result;
   st = HOMING;
   expected += 2;
@@ -311,21 +310,22 @@ bool Mechanical::moveAxis(char * request, int x, int y, int f) {
   if(70000.0*(xCoord + yCoord)/fSpeed > WATCHDOG_LIMIT){
     return false;
   }
-  String X = String(reqBuffer + x +2);
-  String Y = String(reqBuffer + y +2);
-  String F = String(reqBuffer + f +2);
-  bool result = sendCommand("G1 X" + X
-    + " Y" + Y 
-    + " F" + F + "\r\nG4P0",
-  IDLE,IDLE,ERROR);
+  strcpy(GRBLcommand, "G1 X");
+  strcat(GRBLcommand, reqBuffer + x + 2);
+  strcat(GRBLcommand, " Y");
+  strcat(GRBLcommand, reqBuffer + y + 2);
+  strcat(GRBLcommand, " F");
+  strcat(GRBLcommand, reqBuffer + f + 2);
+  strcat(GRBLcommand, "\r\nG4p0");
+  bool result = sendCommand(IDLE,IDLE,ERROR);
   if(!result) return result;
   st = MOVING;
   expected += 4;
   //this command can take a while to confirm.
   longWait = true;
   posOutdated = true; //temporary cautionary measure.
-  afterPos.x = X;
-  afterPos.y = Y;
+  afterPos.x = String(reqBuffer + x + 2);
+  afterPos.y = String(reqBuffer + y + 2);
   return result;
 }
 
@@ -345,12 +345,13 @@ bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
   reqBuffer[f - 1] = '\0';
   reqBuffer[r - 1] = '\0';
   reqBuffer[s - 1] = '\0';
-  
-  bool result = sendCommand(stopping + "$J=" + mode 
+  /*
+  stopping + "$J=" + mode 
   + " X" + String(reqBuffer + x + 2)
   + " Y" + String(reqBuffer + y + 2)
-  + " F" + String(reqBuffer + f + 2),
-  JOGGING, JOGGING, ERROR);
+  + " F" + String(reqBuffer + f + 2)
+  * */
+  bool result = sendCommand(JOGGING, JOGGING, ERROR);
   
   if(!result) return result;
   expected += 4;
@@ -365,11 +366,13 @@ bool Mechanical::panAxis(char * request, int x, int y, int f) {
   reqBuffer[x - 1] = '\0';
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
-  bool result = sendCommand("\x85\r\n$J=G91 X" 
+  /*
+  "\x85\r\n$J=G91 X" 
   + String(reqBuffer + x + 2)
   + " Y" + String(reqBuffer + y + 2) 
-  + " F" + String(reqBuffer + f + 2),
-   JOGGING, JOGGING, ERROR);
+  + " F" + String(reqBuffer + f + 2)
+   * */
+  bool result = sendCommand(JOGGING, JOGGING, ERROR);
   if(!result) return result;
   expected += 4;
   posOutdated = true;
@@ -385,8 +388,11 @@ bool Mechanical::uniJog(char * request, int c, int f){
   String F = String(reqBuffer + f + 2);
   String destination = (Coord[0] == '-') ? "0" : 
                         (Coord[1] == 'X') ? maxpos.x : maxpos.y;
-  bool result = sendCommand("$J=G90 " + String(Coord[1]) + destination +
-  " F" + F, JOGGING, JOGGING, ERROR);
+  /*
+  "$J=G90 " + String(Coord[1]) + destination +
+  " F" + F
+  */
+  bool result = sendCommand(JOGGING, JOGGING, ERROR);
   if(!result) return result;
   expected += 2;
   posOutdated = true;
@@ -395,7 +401,8 @@ bool Mechanical::uniJog(char * request, int c, int f){
 
 //stop jogging movement.
 bool Mechanical::stopJog() {
-  bool result = sendCommand("\x85",JOGGING,IDLE,ERROR);
+  strcpy(GRBLcommand, "\x85");
+  bool result = sendCommand(JOGGING,IDLE,ERROR);
   if(!result) return result;
   expected += 2;
   posOutdated = true;
@@ -403,7 +410,8 @@ bool Mechanical::stopJog() {
 }
 
 bool Mechanical::unlockAxis() {
-  bool result = sendCommand("$x",LOCK,IDLE,ERROR);
+  strcpy(GRBLcommand, "$x");
+  bool result = sendCommand(LOCK,IDLE,ERROR);
   if(!result) return result;
   expected += 2;
   infos += 1;
@@ -422,8 +430,8 @@ bool Mechanical::toggleLight(char * request, int l){
   if(inputNum >= 255){
     inputNum = 255;
   }else if(inputNum <= 0) inputNum = 0;
-    
-  bool result = sendCommand("M03 S" + input, IDLE,st,st);
+    //"M03 S" + input
+  bool result = sendCommand(IDLE,st,st);
   if (!result) return result;
   answered = true;
   expected += 2;

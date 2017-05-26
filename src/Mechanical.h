@@ -28,8 +28,8 @@ class Mechanical {
 
     //Asks GRBL its position with "?".
     bool askPos();
-    //Safely send a command, and expect a response or not.
-    bool sendCommand(String command, Status atLeast, Status success, Status failure);
+    //Safely send the command in the buffer, and expect a response or not.
+    bool sendCommand(Status atLeast, Status success, Status failure);
     //flush input serial stream
     void flush();
     //Change the status
