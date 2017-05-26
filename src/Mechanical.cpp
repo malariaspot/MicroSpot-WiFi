@@ -15,10 +15,14 @@
 #define ENABLEPIN 4
 #define ENDLINE '\n'
 #define BUFFERSIZE 512
+#define REQSIZE 512
+#define GRBLSIZE 256
 #define SERIAL_FRAMERATE 25
 
 int bufferIndex, lastIndex;
 char serialBuffer[BUFFERSIZE];
+char requestBuffer[REQSIZE];
+char GRBLcommand[GRBLSIZE];
 int expected, infos;
 double timeStamp;
 double serialStamp;
@@ -309,14 +313,25 @@ bool Mechanical::homeAxis() {
 }
 
 //Uninterruptible movement
-bool Mechanical::moveAxis(String X, String Y, String F) {
+bool Mechanical::moveAxis(char * request, int x, int y, int f) {
   //using norm 1 for speed purposes.
   //That turns that 70000 into a magic number.
-  if(X.toFloat() > max_x || Y.toFloat() > max_y) return false;
-  if(70000.0*(X.toFloat() + Y.toFloat())/F.toFloat() > WATCHDOG_LIMIT){
+  strncpy(request,requestBuffer,getCharIndex(request, " HTTP"));
+  requestBuffer[y - 1] = '\0';
+  requestBuffer[f - 1] = '\0';
+  float xCoord = atof(requestBuffer + x + 2);
+  float yCoord = atof(requestBuffer + y + 2);
+  float fSpeed = atof(requestBuffer + f + 2);
+  if(xCoord > max_x || yCoord > max_y) return false;
+  if(70000.0*(xCoord + yCoord)/fSpeed > WATCHDOG_LIMIT){
     return false;
   }
-  bool result = sendCommand("G1 X" + X + " Y" + Y + " F" + F + "\r\nG4P0",
+  String X = String(requestBuffer + x +2);
+  String Y = String(requestBuffer + y +2);
+  String F = String(requestBuffer + f +2);
+  bool result = sendCommand("G1 X" + X
+    + " Y" + Y 
+    + " F" + F + "\r\nG4P0",
   IDLE,IDLE,ERROR);
   if(!result) return result;
   st = MOVING;
@@ -330,17 +345,27 @@ bool Mechanical::moveAxis(String X, String Y, String F) {
 }
 
 //Interruptible movement
-bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
+bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
   if(!answered) return false;
+  strncpy(request,requestBuffer,getCharIndex(request, " HTTP"));
   String mode;
-  if(R == "true"){
+  if(getCharIndex(r,requestBuffer,"true")){
     mode = "G91";
   }else{
     mode = "G90";
   }
   String  stopping = "\x85\r\n";
-  bool result = sendCommand(stopping + "$J=" + mode + " X" + X + " Y" + Y + 
-  " F" + F, JOGGING, JOGGING, ERROR);
+  requestBuffer[y - 1] = '\0';
+  requestBuffer[f - 1] = '\0';
+  requestBuffer[r - 1] = '\0';
+  requestBuffer[s - 1] = '\0';
+  
+  bool result = sendCommand(stopping + "$J=" + mode 
+  + " X" + String(requestBuffer + x + 2)
+  + " Y" + String(requestBuffer + y + 2)
+  + " F" + String(requestBuffer + f + 2),
+  JOGGING, JOGGING, ERROR);
+  
   if(!result) return result;
   expected += 4;
   posOutdated = true;
@@ -348,20 +373,29 @@ bool Mechanical::jogAxis(String X, String Y, String F, String R, String S) {
 }
 
 //axis panning
-bool Mechanical::panAxis(String X, String Y, String F) {
+bool Mechanical::panAxis(char * request, int x, int y, int f) {
   if(!answered) return false;
-  bool result = sendCommand("\x85\r\n$J=G91 X" + X + " Y" + Y + 
-  " F" + F, JOGGING, JOGGING, ERROR);
+  strncpy(request,requestBuffer,getCharIndex(request, " HTTP"));
+  requestBuffer[y - 1] = '\0';
+  requestBuffer[f - 1] = '\0';
+  bool result = sendCommand("\x85\r\n$J=G91 X" 
+  + String(requestBuffer + x + 2)
+  + " Y" + String(requestBuffer + y + 2) 
+  + " F" + String(requestBuffer + f + 2),
+   JOGGING, JOGGING, ERROR);
   if(!result) return result;
   expected += 4;
   posOutdated = true;
   return result;
 }
 
-bool Mechanical::uniJog(String coord, String F){
+bool Mechanical::uniJog(char * request, int c, int f){
   if(!answered) return false;
-  String destination = (coord[0] == '-') ? "0" : 
-                        (coord[1] == 'X') ? maxpos.x : maxpos.y;
+  strncpy(request,requestBuffer,getCharIndex(request, " HTTP"));
+  requestBuffer[f -1] = '\0';
+  String Coord = String(requestBuffer + c + 2);
+  String destination = (Coord[0] == '-') ? "0" : 
+                        (Coord[1] == 'X') ? maxpos.x : maxpos.y;
   bool result = sendCommand("$J=G90 " + String(coord[1]) + destination +
   " F" + F, JOGGING, JOGGING, ERROR);
   if(!result) return result;

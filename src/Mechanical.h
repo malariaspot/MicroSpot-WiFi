@@ -27,7 +27,6 @@ class Mechanical {
     }after;
     
 
-    bool checkSanity(char * buffer);
     //Asks GRBL its position with "?".
     bool askPos();
     //Safely send a command, and expect a response or not.
@@ -76,10 +75,10 @@ class Mechanical {
 
     //Movement
     bool homeAxis(); //Take axis to home position.
-    bool moveAxis(String X, String Y, String F); //Ininterruptible move to (X,Y) at speed F.
-    bool jogAxis(String X,String Y,String F, String R, String s); //Interruptible move to (X,Y) at speed F.
-    bool panAxis(String X, String Y, String F); //fast jogging for panning.
-    bool uniJog(String coord, String F); //jog in a cartesian direction.
+    bool moveAxis(char * request, int x, int y, int f); //Ininterruptible move to (X,Y) at speed F.
+    bool jogAxis(char * request, int x, int y, int f, int r, int s); //Interruptible move to (X,Y) at speed F.
+    bool panAxis(char * request, int x, int y, int f); //fast jogging for panning.
+    bool uniJog(char * request , int c, int f); //jog in a cartesian direction.
     bool stopJog();  //Stop an interruptible movement.
     bool unlockAxis(); //Send and unlock token to GRBL. Breaks stability. Devs only.
     bool toggleLight(int intensity); //turn on or off the lights.
