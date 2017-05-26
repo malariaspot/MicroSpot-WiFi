@@ -82,8 +82,8 @@ void MicroServer::run() {
     int questionMarkIndex = getCharIndex(requestBuffer, "?");
     int httpIndex = getCharIndex(requestBuffer, " HTTP/");
  
-    if (questionMarkIndex != -1) strncpy(urlBuffer, requestBuffer+4, questionMarkIndex-4);
-    else strncpy(urlBuffer, requestBuffer+4, httpIndex-4);
+    if (questionMarkIndex > -1) strncpy(urlBuffer, requestBuffer+4, questionMarkIndex-3);
+    else strncpy(urlBuffer, requestBuffer+4, httpIndex-3);
     
     newClient.flush();
 
@@ -129,7 +129,7 @@ void MicroServer::run() {
         else send(200, "Busy for move", &newClient); 
       }else send(404, "Error: One or more position arguments are missing in move!", &newClient); 
 
-    }else if (getCharIndex(urlBuffer,"/jog")) {
+    }else if (getCharIndex(urlBuffer,"/jog") > -1) {
 
       int x = arg("x=");
       int y = arg("y=");
