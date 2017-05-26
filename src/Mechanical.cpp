@@ -1,6 +1,7 @@
 #include "Mechanical.h"
 #include "MicroServer.h"
 #include "charUtils.h"
+#include "mathUtils.h"
 #include <stdint.h>
 
 #define TIMEOUT 4000
@@ -488,13 +489,8 @@ bool Mechanical::toggleLight(char * request, int l){
   reqBuffer[l - 1] = '\0';
   
   //saturate intensity between 0 and 255.
-  //Not using just min() and max() seems uncanny, 
-  //but issue#398 of the framework reveals that they just don' work.
-  //Until there is a fix, this is what we got to do.
   int inputNum = atoi(reqBuffer + l + 2);
-  if(inputNum >= 255){
-    inputNum = 255;
-  }else if(inputNum <= 0) inputNum = 0;
+  inputNum = saturate(inputNum, 0, 255);
   
   //Compose the command into GRBLcommand
   strcpy(GRBLcommand, "M03 S");
