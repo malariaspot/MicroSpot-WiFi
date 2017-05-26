@@ -149,7 +149,7 @@ void Mechanical::serialListen(){
   while(Serial.available() > 0){
     serialBuffer[bufferIndex] = Serial.read();
     bufferIndex++;
-    if(serialBuffer[bufferIndex] == ENDLINE){
+    if(serialBuffer[bufferIndex - 1] == ENDLINE){
       serialBuffer[bufferIndex] = '\0';
       switch(msgClassify(lastIndex, serialBuffer)){
         case AFFIRMATIVE:
