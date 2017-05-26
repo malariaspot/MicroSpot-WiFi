@@ -1,5 +1,5 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef MECHTYPES_H
+#define MECHTYPES_H
 
 enum Status{
   OFF, //Enable pin is off.

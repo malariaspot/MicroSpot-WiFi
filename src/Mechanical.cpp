@@ -282,34 +282,50 @@ bool Mechanical::toggle(bool button) {
 
 //Home the axes
 bool Mechanical::homeAxis() {
+  
+  //compose the command
   strcpy(GRBLcommand, "$h");
-  bool result = sendCommand(LOCK,IDLE,ERROR);
-  if(!result) return result;
+  
+  //check if the command can be sent, and send it.
+  if(!sendCommand(LOCK,IDLE,ERROR)) return false;
+  
+  //update status
   st = HOMING;
+  
+  //update status expectations.
   expected += 2;
   //this command can take a while to confirm
   longWait = true;
   posOutdated = true; //temporary cautionary measure.
   afterPos.x = "0.000";
   afterPos.y = "0.000";
-  return result;
+  return true;
 }
 
 //Uninterruptible movement
 bool Mechanical::moveAxis(char * request, int x, int y, int f) {
-  //using norm 1 for speed purposes.
-  //That turns that 70000 into a magic number.
+  
+  //Copy and adequate the request for parsing.
   strcpy(reqBuffer, request);
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
   reqBuffer[x - 1] = '\0';
+  
+  //Take numerical values for safety cautions.
   float xCoord = atof(reqBuffer + x + 1);
   float yCoord = atof(reqBuffer + y + 1);
   float fSpeed = atof(reqBuffer + f + 1);
+  
+  //out of bounds safelock.
   if(xCoord > max_x || yCoord > max_y) return false;
-  if(70000.0*(xCoord + yCoord)/fSpeed > WATCHDOG_LIMIT){
+  
+  //Too slow movement safelock.
+  //using norm 1 for speed purposes.
+  //That turns that 70000 into a magic number.
+  if(70000.0*(xCoord + yCoord)/fSpeed > WATCHDOG_LIMIT)
     return false;
-  }
+  
+  //Compose the command into GRBLcommand.
   strcpy(GRBLcommand, "G1 X");
   strcat(GRBLcommand, reqBuffer + x + 2);
   strcat(GRBLcommand, " Y");
@@ -317,125 +333,185 @@ bool Mechanical::moveAxis(char * request, int x, int y, int f) {
   strcat(GRBLcommand, " F");
   strcat(GRBLcommand, reqBuffer + f + 2);
   strcat(GRBLcommand, "\r\nG4p0");
-  bool result = sendCommand(IDLE,IDLE,ERROR);
-  if(!result) return result;
+  
+  //check if the command can be sent, and send it
+  if(!sendCommand(IDLE,IDLE,ERROR)) return false;
+  
+  //update status.
   st = MOVING;
+  
+  //update status expectations.
   expected += 4;
   //this command can take a while to confirm.
   longWait = true;
   posOutdated = true; //temporary cautionary measure.
   afterPos.x = String(reqBuffer + x + 2);
   afterPos.y = String(reqBuffer + y + 2);
-  return result;
+  return true;
 }
 
 //Interruptible movement
 bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
+  
+  //if previous jog has been unanswered, return a false
   if(!answered) return false;
+  
+  //Copy and adequate the request for parsing.
   strcpy(reqBuffer, request);
-  String mode;
-  if(getCharIndex(r,reqBuffer,"true")){
-    mode = "G91";
-  }else{
-    mode = "G90";
-  }
-  String  stopping = "\x85\r\n";
   reqBuffer[x - 1] = '\0';
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
   reqBuffer[r - 1] = '\0';
   reqBuffer[s - 1] = '\0';
-  /*
-  stopping + "$J=" + mode 
-  + " X" + String(reqBuffer + x + 2)
-  + " Y" + String(reqBuffer + y + 2)
-  + " F" + String(reqBuffer + f + 2)
-  * */
-  bool result = sendCommand(JOGGING, JOGGING, ERROR);
   
-  if(!result) return result;
+  //compose the command into GRBLcommand.
+  if(getCharIndex(s,reqBuffer,"true")){
+    strcpy(GRBLcommand, "\x85\r\n");
+  }else{
+    GRBLcommand[0] = '\0'; //make strcat write from the beggining.
+  }
+  strcat(GRBLcommand, "$J=");
+  if(getCharIndex(r,reqBuffer,"true")){
+    strcat(GRBLcommand, "G91 ");
+  }else{
+    strcat(GRBLcommand, "G90 ");
+  }
+  strcat(GRBLcommand, "X");
+  strcat(GRBLcommand, reqBuffer + x + 2);
+  strcat(GRBLcommand, "Y");
+  strcat(GRBLcommand, reqBuffer + y + 2);
+  strcat(GRBLcommand, "F");
+  strcat(GRBLcommand, reqBuffer + y + 2);
+  
+  //check if the command can be sent, and send it.
+  if(!sendCommand(JOGGING, JOGGING, ERROR)) return false;
+  
+  //update the status expectations.
   expected += 4;
   posOutdated = true;
-  return result;
+  return true;
 }
 
 //axis panning
 bool Mechanical::panAxis(char * request, int x, int y, int f) {
+  
+  //if the previous command hasn't even been answered, return false.
   if(!answered) return false;
+  
+  //Copy and adequate the response for parsing.
   strcpy(reqBuffer, request);
   reqBuffer[x - 1] = '\0';
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
-  /*
-  "\x85\r\n$J=G91 X" 
-  + String(reqBuffer + x + 2)
-  + " Y" + String(reqBuffer + y + 2) 
-  + " F" + String(reqBuffer + f + 2)
-   * */
-  bool result = sendCommand(JOGGING, JOGGING, ERROR);
-  if(!result) return result;
+  
+  //Compose the command.
+  strcpy(GRBLcommand, "\x85\r\n$J=G91 X");
+  strcat(GRBLcommand, reqBuffer + x + 2);
+  strcat(GRBLcommand, " Y");
+  strcat(GRBLcommand, reqBuffer + y + 2);
+  strcat(GRBLcommand, " F");
+  strcat(GRBLcommand, reqBuffer + f + 2);
+  
+  //check if the command can be sent, and send it.
+  if(!sendCommand(JOGGING, JOGGING, ERROR)) return false;
   expected += 4;
   posOutdated = true;
-  return result;
+  return true;
 }
 
 bool Mechanical::uniJog(char * request, int c, int f){
+  
+  //if the previous command hasn't even been answered, return false.
   if(!answered) return false;
+  
+  //Copy and adequate the response into GRBLcommmand.
   strcpy(reqBuffer, request);
   reqBuffer[c - 1] = '\0';
   reqBuffer[f - 1] = '\0';
-  String Coord = String(reqBuffer + c + 2);
-  String F = String(reqBuffer + f + 2);
-  String destination = (Coord[0] == '-') ? "0" : 
-                        (Coord[1] == 'X') ? maxpos.x : maxpos.y;
-  /*
-  "$J=G90 " + String(Coord[1]) + destination +
-  " F" + F
-  */
-  bool result = sendCommand(JOGGING, JOGGING, ERROR);
-  if(!result) return result;
+  
+  //Compose the command.
+  strcpy(GRBLcommand, "$J=G90 ");
+  if(reqBuffer[c + 3] == 'X'){
+    strcat(GRBLcommand, "X");
+    if(reqBuffer[c + 2] == '-') strcat(GRBLcommand, "0");
+    else strcat(GRBLcommand, MAX_X);
+  }else{
+    strcat(GRBLcommand, "Y");
+    if(reqBuffer[c + 2] == '-') strcat(GRBLcommand, "0");
+    else strcat(GRBLcommand, MAX_Y);
+  }
+  strcat(GRBLcommand, " F");
+  strcat(GRBLcommand, reqBuffer + f + 2);
+  
+  //Check if the command can be sent, and send it.
+  if(!sendCommand(JOGGING, JOGGING, ERROR)) return false;
+  
+  //update status expectations for the future.
   expected += 2;
   posOutdated = true;
-  return result;
+  return true;
 }
 
 //stop jogging movement.
 bool Mechanical::stopJog() {
+  
+  //Compose command into GRBLcommand.
   strcpy(GRBLcommand, "\x85");
-  bool result = sendCommand(JOGGING,IDLE,ERROR);
-  if(!result) return result;
+  
+  //Check if the command can be sent, and send it.
+  if(!sendCommand(JOGGING,IDLE,ERROR)) return false;
+  
+  //update status expectations for the future.
   expected += 2;
   posOutdated = true;
-  return result;
+  return true;
 }
 
 bool Mechanical::unlockAxis() {
+  
+  //compose command into GRBLcommand
   strcpy(GRBLcommand, "$x");
-  bool result = sendCommand(LOCK,IDLE,ERROR);
-  if(!result) return result;
+  
+  //Check if the command can be sent, and send it.
+  if(!sendCommand(LOCK,IDLE,ERROR)) return false;
+  
+  //update expectations for the future.
   expected += 2;
   infos += 1;
-  return result;
+  return true;
 }
 
 bool Mechanical::toggleLight(char * request, int l){
-  int inputNum;
+  
+  //Copy and adequate the request for parsing.
   strcpy(reqBuffer,request);
-  String input = String(reqBuffer + l + 2);
-  inputNum = input.toInt();
+  reqBuffer[l - 1] = '\0';
+  
   //saturate intensity between 0 and 255.
   //Not using just min() and max() seems uncanny, 
   //but issue#398 of the framework reveals that they just don' work.
   //Until there is a fix, this is what we got to do.
+  int inputNum = atoi(reqBuffer + l + 2);
   if(inputNum >= 255){
     inputNum = 255;
   }else if(inputNum <= 0) inputNum = 0;
-    //"M03 S" + input
-  bool result = sendCommand(IDLE,st,st);
-  if (!result) return result;
-  answered = true;
+  
+  //Compose the command into GRBLcommand
+  strcpy(GRBLcommand, "M03 S");
+  char number[8];
+  sprintf(number, "%d", inputNum);
+  strcat(GRBLcommand, number);
+  
+  //check if the command can be sent, and send it.
+  if (!sendCommand(IDLE,st,st)) return false;
+  
+  //update expectations for the future
   expected += 2;
-  microServer->update("Light set to " + input);
+  
+  //this command is answered right here.
+  
+  answered = true;
+  microServer->update("Light set to " + String(number));
   return true;
 }
 
