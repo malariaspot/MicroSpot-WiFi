@@ -81,7 +81,7 @@ class Mechanical {
     bool uniJog(char * request , int c, int f); //jog in a cartesian direction.
     bool stopJog();  //Stop an interruptible movement.
     bool unlockAxis(); //Send and unlock token to GRBL. Breaks stability. Devs only.
-    bool toggleLight(int intensity); //turn on or off the lights.
+    bool toggleLight(char * request, int l); //turn on or off the lights.
 
     //Status reporting
     bool getPos(WiFiClient client); //Reports current position.

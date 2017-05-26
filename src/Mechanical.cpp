@@ -19,9 +19,9 @@
 #define GRBLSIZE 256
 #define SERIAL_FRAMERATE 25
 
-int bufferIndex, lastIndex;
+int bufIndex, lastIndex;
 char serialBuffer[BUFFERSIZE];
-char requestBuffer[REQSIZE];
+char reqBuffer[REQSIZE];
 char GRBLcommand[GRBLSIZE];
 int expected, infos;
 double timeStamp;
@@ -88,7 +88,7 @@ void Mechanical::errorHandler(int errNum){
 void Mechanical::restartAll(){
     dogWatching = false; //turn off watchdog
     longWait = false; //unlock MicroServer
-    bufferIndex = 0;
+    bufIndex = 0;
     lastIndex = 0;
     expected = 0;
     infos = 0;
@@ -151,10 +151,10 @@ MsgType msgClassify(int from, char * msg){
 void Mechanical::serialListen(){
 //transmit messages from serial.
   while(Serial.available() > 0){
-    serialBuffer[bufferIndex] = Serial.read();
-    bufferIndex++;
-    if(serialBuffer[bufferIndex - 1] == ENDLINE){
-      serialBuffer[bufferIndex] = '\0';
+    serialBuffer[bufIndex] = Serial.read();
+    bufIndex++;
+    if(serialBuffer[bufIndex - 1] == ENDLINE){
+      serialBuffer[bufIndex] = '\0';
       switch(msgClassify(lastIndex, serialBuffer)){
         case AFFIRMATIVE:
           expected--;
@@ -196,7 +196,7 @@ void Mechanical::serialListen(){
           restartAll();
           break;
       }
-      lastIndex = bufferIndex;
+      lastIndex = bufIndex;
       if(expected <= 0){
         restartAll();
         pos.x = afterPos.x;
@@ -256,7 +256,7 @@ Mechanical::Mechanical(int baud) {
   afterPos.y = "";
   pinMode(ENABLEPIN,OUTPUT);
   expected = 0;
-  bufferIndex = 0;
+  bufIndex = 0;
   lastIndex = 0;
   infos = 0;
   answered = true;
@@ -316,19 +316,19 @@ bool Mechanical::homeAxis() {
 bool Mechanical::moveAxis(char * request, int x, int y, int f) {
   //using norm 1 for speed purposes.
   //That turns that 70000 into a magic number.
-  strncpy(request,requestBuffer,getCharIndex(request, " HTTP"));
-  requestBuffer[y - 1] = '\0';
-  requestBuffer[f - 1] = '\0';
-  float xCoord = atof(requestBuffer + x + 2);
-  float yCoord = atof(requestBuffer + y + 2);
-  float fSpeed = atof(requestBuffer + f + 2);
+  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
+  reqBuffer[y - 1] = '\0';
+  reqBuffer[f - 1] = '\0';
+  float xCoord = atof(reqBuffer + x + 2);
+  float yCoord = atof(reqBuffer + y + 2);
+  float fSpeed = atof(reqBuffer + f + 2);
   if(xCoord > max_x || yCoord > max_y) return false;
   if(70000.0*(xCoord + yCoord)/fSpeed > WATCHDOG_LIMIT){
     return false;
   }
-  String X = String(requestBuffer + x +2);
-  String Y = String(requestBuffer + y +2);
-  String F = String(requestBuffer + f +2);
+  String X = String(reqBuffer + x +2);
+  String Y = String(reqBuffer + y +2);
+  String F = String(reqBuffer + f +2);
   bool result = sendCommand("G1 X" + X
     + " Y" + Y 
     + " F" + F + "\r\nG4P0",
@@ -347,23 +347,23 @@ bool Mechanical::moveAxis(char * request, int x, int y, int f) {
 //Interruptible movement
 bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
   if(!answered) return false;
-  strncpy(request,requestBuffer,getCharIndex(request, " HTTP"));
+  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
   String mode;
-  if(getCharIndex(r,requestBuffer,"true")){
+  if(getCharIndex(r,reqBuffer,"true")){
     mode = "G91";
   }else{
     mode = "G90";
   }
   String  stopping = "\x85\r\n";
-  requestBuffer[y - 1] = '\0';
-  requestBuffer[f - 1] = '\0';
-  requestBuffer[r - 1] = '\0';
-  requestBuffer[s - 1] = '\0';
+  reqBuffer[y - 1] = '\0';
+  reqBuffer[f - 1] = '\0';
+  reqBuffer[r - 1] = '\0';
+  reqBuffer[s - 1] = '\0';
   
   bool result = sendCommand(stopping + "$J=" + mode 
-  + " X" + String(requestBuffer + x + 2)
-  + " Y" + String(requestBuffer + y + 2)
-  + " F" + String(requestBuffer + f + 2),
+  + " X" + String(reqBuffer + x + 2)
+  + " Y" + String(reqBuffer + y + 2)
+  + " F" + String(reqBuffer + f + 2),
   JOGGING, JOGGING, ERROR);
   
   if(!result) return result;
@@ -375,13 +375,13 @@ bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
 //axis panning
 bool Mechanical::panAxis(char * request, int x, int y, int f) {
   if(!answered) return false;
-  strncpy(request,requestBuffer,getCharIndex(request, " HTTP"));
-  requestBuffer[y - 1] = '\0';
-  requestBuffer[f - 1] = '\0';
+  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
+  reqBuffer[y - 1] = '\0';
+  reqBuffer[f - 1] = '\0';
   bool result = sendCommand("\x85\r\n$J=G91 X" 
-  + String(requestBuffer + x + 2)
-  + " Y" + String(requestBuffer + y + 2) 
-  + " F" + String(requestBuffer + f + 2),
+  + String(reqBuffer + x + 2)
+  + " Y" + String(reqBuffer + y + 2) 
+  + " F" + String(reqBuffer + f + 2),
    JOGGING, JOGGING, ERROR);
   if(!result) return result;
   expected += 4;
@@ -391,10 +391,10 @@ bool Mechanical::panAxis(char * request, int x, int y, int f) {
 
 bool Mechanical::uniJog(char * request, int c, int f){
   if(!answered) return false;
-  strncpy(request,requestBuffer,getCharIndex(request, " HTTP"));
-  requestBuffer[f -1] = '\0';
-  String Coord = String(requestBuffer + c + 2);
-  String F = String(requestBuffer + f + 2);
+  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
+  reqBuffer[f -1] = '\0';
+  String Coord = String(reqBuffer + c + 2);
+  String F = String(reqBuffer + f + 2);
   String destination = (Coord[0] == '-') ? "0" : 
                         (Coord[1] == 'X') ? maxpos.x : maxpos.y;
   bool result = sendCommand("$J=G90 " + String(Coord[1]) + destination +
@@ -422,20 +422,19 @@ bool Mechanical::unlockAxis() {
   return result;
 }
 
-bool Mechanical::toggleLight(int intensity){
+bool Mechanical::toggleLight(char * request, int l){
   int inputNum;
+  strncpy(request,reqBuffer,getCharIndex(request, " HTTP"));
+  String input = String(reqBuffer + l + 2);
+  inputNum = input.toInt();
   //saturate intensity between 0 and 255.
   //Not using just min() and max() seems uncanny, 
   //but issue#398 of the framework reveals that they just don' work.
   //Until there is a fix, this is what we got to do.
-  if(intensity >= 255){
+  if(inputNum >= 255){
     inputNum = 255;
-  }else if(intensity <= 0){
-    inputNum = 0;
-  }else{
-    inputNum = intensity;
-  }
-  String input = String(inputNum);
+  }else if(inputNum <= 0) inputNum = 0;
+    
   bool result = sendCommand("M03 S" + input, IDLE,st,st);
   if (!result) return result;
   answered = true;
