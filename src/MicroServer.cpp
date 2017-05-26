@@ -95,7 +95,7 @@ void MicroServer::run() {
       if (x > -1 && y > -1 && f > -1) {
         if (mechanical->panAxis(requestBuffer,x,y,f)) currentClient = newClient; 
         else send(200, "Busy", &newClient); 
-      }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+      }else send(404, "Error: One or more position arguments are missing in pan!", &newClient); 
 
     }else if (getCharIndex(urlBuffer, "/uniJog") > -1){
 
@@ -104,12 +104,11 @@ void MicroServer::run() {
       if (c > -1 && f > -1) {
         if (mechanical->uniJog(requestBuffer,c,f)) currentClient = newClient; 
         else send(200, "Busy", &newClient); 
-      }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+      }else send(404, "Error: One or more position arguments are missing in uniJog!", &newClient); 
 
     }else if (getCharIndex(urlBuffer, "/ayy/lmao") > -1) {
 
       send(200, "Ayy Lmao", &newClient);
-
     }else if (getCharIndex(urlBuffer,"/stop") > -1) {
 
       if (mechanical->stopJog()) currentClient = newClient;
@@ -128,7 +127,7 @@ void MicroServer::run() {
       if (x > -1 && y > -1 && f > -1) {
         if (mechanical->moveAxis(requestBuffer,x,y,f)) currentClient = newClient; 
         else send(200, "Busy for move", &newClient); 
-      }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+      }else send(404, "Error: One or more position arguments are missing in move!", &newClient); 
 
     }else if (getCharIndex(urlBuffer,"/jog")) {
 
@@ -140,7 +139,7 @@ void MicroServer::run() {
       if (x > -1 && y > -1 && f > -1 && r > -1 && s > -1) {
         if (mechanical->jogAxis(requestBuffer,x,y,f,r,s)) currentClient = newClient; 
         else send(200, "Busy", &newClient); 
-      }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+      }else send(404, "Error: One or more position arguments are missing in jog!", &newClient); 
       
     }else if (getCharIndex(urlBuffer, "/position") > -1) {
 
