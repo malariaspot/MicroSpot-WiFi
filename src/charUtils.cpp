@@ -1,24 +1,20 @@
 #include "charUtils.h"
 
 int getCharIndex(int from, char * buffer, const char * control){
-  if(*control == '\0'){
-    return from;
-  }else{
-    if(*(buffer + from) == '\0'){
-      return -1;
+  int index = 0;
+  int ctrIndex = 0;
+  int ctrLen = 0;
+  while(control[ctrIndex] != '\0'){
+    if(buffer[from + index] == '\0') return -1;
+    if(control[ctrIndex] != buffer[from + index]){
+      index -= ctrIndex;
+      ctrIndex = 0;
     }else{
-      if(*(buffer + from) == *control){
-        int last = getCharIndex(from, buffer + 1, control + 1);
-        if(last < 0){
-          return getCharIndex(from + 1, buffer, control);
-        }else{
-          return last;
-        }
-      }else{
-        return getCharIndex(from + 1, buffer, control);
-      }
+      ctrIndex++;
     }
+    index++;
   }
+  return ctrIndex == 0 ? -1 : from + index - ctrIndex;
 }
 
 int getCharIndex(char * buffer, const char * control){
