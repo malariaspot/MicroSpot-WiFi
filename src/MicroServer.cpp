@@ -3,12 +3,16 @@
 #include <Ticker.h>
 
 #define LEDPIN 14 //GPIO for the LED
+#define REQUESTBUFFERSIZE 512
 
 Ticker ledBlink; // LED ticker and functions to make a Blink
 
 void ledFlick() { digitalWrite(LEDPIN,!digitalRead(LEDPIN)); }
 
 WiFiServer serverWifi(80);
+char requestBuffer[REQUESTBUFFERSIZE];
+char urlBuffer[32];
+int bufferIndex;
 
 /* INIT */
 
@@ -65,101 +69,114 @@ void MicroServer::setup(String hostname) {
 
 void MicroServer::run() {
   WiFiClient newClient = serverWifi.available();
+
   if (newClient) {
+
     while(!newClient.available()) { delay(1); }
-    request = newClient.readStringUntil('\r');
-    
-    if (request.indexOf('?') != -1) {
-      url = request.substring(request.indexOf("GET ")+4, request.indexOf("?"));
-    }else{
-      url = request.substring(request.indexOf("GET ")+4, request.indexOf(" HTTP/"));      
+
+    while(newClient.available()) {
+      requestBuffer[bufferIndex] =  newClient.read();
+      bufferIndex++;
     }
+
+    int questionMarkIndex = getCharIndex(requestBuffer, "?");
+    int httpIndex = getCharIndex(requestBuffer, " HTTP/");
+ 
+    if (questionMarkIndex != -1) strncpy(urlBuffer, requestBuffer+4, questionMarkIndex-4);
+    else strncpy(urlBuffer, requestBuffer+4, httpIndex-4);
     
     newClient.flush();
 
-    if (url == "/pan"){
-      
-      if (hasArg("x") && hasArg("y") && hasArg("f")) {
+    if (getCharIndex(urlBuffer, "/pan") > -1){
 
-        if (mechanical->panAxis(arg("x"),arg("y"),arg("f"))) { 
-          currentClient = newClient; 
-        }else send(200, "Busy", &newClient); 
-
+      int x = arg("x=");
+      int y = arg("y=");
+      int f = arg("f=");
+      if (x > -1 && y > -1 && f > -1) {
+        if (mechanical->panAxis(requestBuffer,x,y,f)) currentClient = newClient; 
+        else send(200, "Busy", &newClient); 
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
-    }else if (url == "/uniJog"){
-      if (hasArg("c") && hasArg("f")) {
 
-        if (mechanical->uniJog(arg("c"),arg("f"))) { 
-          currentClient = newClient; 
-        }else send(200, "Busy", &newClient); 
+    }else if (getCharIndex(urlBuffer, "/uniJog") > -1){
 
+      int c = arg("c=");
+      int f = arg("f=")
+      if (c > -1 && f > -1) {
+        if (mechanical->uniJog(requestBuffer,c,f)) currentClient = newClient; 
+        else send(200, "Busy", &newClient); 
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
-    }else if (url == "/ayy/lmao") {
+
+    }else if (getCharIndex(urlBuffer, "/ayy/lmao") > -1) {
+
       send(200, "Ayy Lmao", &newClient);
+
     }else if (url == "/stop") {
 
       if (mechanical->stopJog()) currentClient = newClient;
       else send(200, "Busy", &newClient);
 
-    }else if (url == "/home") {
+    }else if (getCharIndex(urlBuffer, "/home") > -1) {
 
       if (mechanical->homeAxis()) currentClient = newClient; 
       else send(200, "Busy for home", &newClient);
 
-    }else if (url == "/move") {
+    }else if (getCharIndex(urlBuffer, "/move") > -1) {
 
-      if (hasArg("x") && hasArg("y") && hasArg("f")) {
-
-        if (mechanical->moveAxis(arg("x"),arg("y"),arg("f"))) currentClient = newClient; 
+      int x = arg("x=");
+      int y = arg("y=");
+      int f = arg("f=");
+      if (x > -1 && y > -1 && f > -1) {
+        if (mechanical->moveAxis(requestBuffer,x,y,f)) currentClient = newClient; 
         else send(200, "Busy for move", &newClient); 
-
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
+
     }else if (url == "/jog") {
 
-      if (hasArg("x") && hasArg("y") && hasArg("f") && hasArg("r") && hasArg("s")) {
-
-        if (mechanical->jogAxis(arg("x"),arg("y"),arg("f"),arg("r"),arg("s"))) { 
-          currentClient = newClient; 
-        }else send(200, "Busy", &newClient); 
-
+      int x = arg("x=");
+      int y = arg("y=");
+      int f = arg("f=");
+      int r = arg("r=");
+      int s = arg("s=");
+      if (x > -1 && y > -1 && f > -1 && r > -1 && s > -1) {
+        if (mechanical->jogAxis(requestBuffer,x,y,f,r,s)) currentClient = newClient; 
+        else send(200, "Busy", &newClient); 
       }else send(404, "Error: One or more position arguments are missing!", &newClient); 
       
-    }else if (url == "/position") {
+    }else if (getCharIndex(urlBuffer, "/position") > -1) {
+
       mechanical->getPos(newClient);
-    }else if(url == "/light"){
-      
-      if (hasArg("l")){
+
+    }else if(getCharIndex(urlBuffer, "/light") > -1){
+
+      int l = arg("l=");
+      if (l > -1){
         currentClient = newClient;
-        mechanical->toggleLight(arg("l").toInt());
+        mechanical->toggleLight(requestBuffer,l);
       }
       
-    }else if(url == "/toggle"){
+    }else if(getCharIndex(urlBuffer, "/toggle") > -1){
       
-      if (hasArg("o")){
+      int o = arg("o=");
+      if (o > -1){
         currentClient = newClient;
-        if(arg("o") == "1") mechanical->toggle(true);
+        if(getCharIndex(o, requestBuffer, "1") > -1) mechanical->toggle(true);
         else mechanical->toggle(false);
       }
       
-    }else send(404,url + " not found!", &newClient); 
-    //return;
+    }else send(404, "Not found!", &newClient); 
   }
+
+  bufferIndex = 0;
+  memset(requestBuffer, 0, sizeof requestBuffer);
+  memset(urlBuffer, 0, sizeof urlBuffer);
 }
 
 void MicroServer::update(String msg) { send(200, msg, &currentClient); }
 
 /* PRIVATE */
 
-String MicroServer::arg(String arg) {
-  int beginning = request.indexOf(arg+"=")+2;
-  int end = request.indexOf("&",beginning);
-  if (end < 0) return request.substring(beginning, request.indexOf(" HTTP/"));
-  return request.substring(beginning, end);
-}
-
-bool MicroServer::hasArg(String arg) {
-  if (request.indexOf(arg+"=") != -1) return true;
-  return false;
+int MicroServer::arg(const char * arg) {
+  return getCharIndex(requestBuffer, arg);
 }
 
 void MicroServer::send(int code, String msg, WiFiClient * client) { 

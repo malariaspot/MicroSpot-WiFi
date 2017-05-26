@@ -7,6 +7,7 @@
 #include <WiFiClient.h>
 #include <ESP8266WiFi.h>
 #include "FileManager.h"
+#include "charUtils.h"
 
 class Mechanical; //Defined and imported in MicroServer.cpp
 
@@ -26,10 +27,7 @@ class MicroServer {
 		Mechanical *mechanical; //Mechanical object
 		FileManager fileManager; //Config file manager
 		WiFiClient currentClient; //client for mechanical
-		String request; //Request sent
-		String url; //URL segment of the request
-		String arg(String arg); //Returns requested argument
-		bool hasArg(String arg); //Checks if requested argument exists
+		int arg(const char * arg); //Checks if requested argument exists
 		
 };
 
