@@ -319,6 +319,7 @@ bool Mechanical::moveAxis(char * request, int x, int y, int f) {
   strcpy(reqBuffer, request);
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
+  reqBuffer[x - 1] = '\0';
   float xCoord = atof(reqBuffer + x + 1);
   float yCoord = atof(reqBuffer + y + 1);
   float fSpeed = atof(reqBuffer + f + 1);
@@ -355,6 +356,7 @@ bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
     mode = "G90";
   }
   String  stopping = "\x85\r\n";
+  reqBuffer[x - 1] = '\0';
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
   reqBuffer[r - 1] = '\0';
@@ -376,6 +378,7 @@ bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
 bool Mechanical::panAxis(char * request, int x, int y, int f) {
   if(!answered) return false;
   strcpy(reqBuffer, request);
+  reqBuffer[x - 1] = '\0';
   reqBuffer[y - 1] = '\0';
   reqBuffer[f - 1] = '\0';
   bool result = sendCommand("\x85\r\n$J=G91 X" 
@@ -392,7 +395,8 @@ bool Mechanical::panAxis(char * request, int x, int y, int f) {
 bool Mechanical::uniJog(char * request, int c, int f){
   if(!answered) return false;
   strcpy(reqBuffer, request);
-  reqBuffer[f -1] = '\0';
+  reqBuffer[c - 1] = '\0';
+  reqBuffer[f - 1] = '\0';
   String Coord = String(reqBuffer + c + 2);
   String F = String(reqBuffer + f + 2);
   String destination = (Coord[0] == '-') ? "0" : 
