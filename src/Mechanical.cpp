@@ -368,6 +368,7 @@ bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
   //compose the command into GRBLcommand.
   if(getCharIndex(s,reqBuffer,"true")){
     strcpy(GRBLcommand, "\x85\r\n");
+    infos++;
   }else{
     GRBLcommand[0] = '\0'; //make strcat write from the beggining.
   }
@@ -416,6 +417,7 @@ bool Mechanical::panAxis(char * request, int x, int y, int f) {
   //check if the command can be sent, and send it.
   if(!sendCommand(JOGGING, JOGGING, ERROR)) return false;
   expected += 4;
+  infos++;
   posOutdated = true;
   return true;
 }
@@ -464,6 +466,7 @@ bool Mechanical::stopJog() {
   
   //update status expectations for the future.
   expected += 2;
+  infos++;
   posOutdated = true;
   return true;
 }

@@ -47,12 +47,12 @@ class Mechanical {
         switch (status) {
             case OFF: return "Serial connection turned off";
             case OFFLINE: return "Serial connection establishment timed out!";
-            case ERROR: return "Error when sending the command! (checkSanity error)";
+            case ERROR: return "ERROR STATUS";
             case LOCK: return "Axis locked";
             case HOMING: return "Now homing...";
             case MOVING: return "Movement in progress";
             //TODO update. This was set for compatibility purposes
-            case JOGGING: return "Movement in progress";
+            case JOGGING: return "Jogging from X: " + pos.x + " Y: " + pos.y;
             case IDLE: return "Action completed X: " + pos.x + " Y: " + pos.y;
             default: return "";
         }
