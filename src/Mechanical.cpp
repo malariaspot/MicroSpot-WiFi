@@ -159,6 +159,10 @@ void Mechanical::serialListen(){
           serialBuffer[d] = '\0';
           pos.x = String(serialBuffer + a + 1);
           pos.y = String(serialBuffer + b + 1);
+          if(st == JOGGING){
+            afterPos.x = pos.x;
+            afterPos.y = pos.y;
+          }
           microServer->send(200,"Position: X: " + pos.x + " Y: " + pos.y, &askClient);
           break;
         case ALARM:
