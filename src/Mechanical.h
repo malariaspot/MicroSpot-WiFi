@@ -45,16 +45,16 @@ class Mechanical {
 
     String statusToString(Status status) {
         switch (status) {
-            case OFF: return "Serial connection turned off";
-            case OFFLINE: return "Serial connection establishment timed out!";
-            case ERROR: return "ERROR STATUS";
-            case LOCK: return "Axis locked";
-            case HOMING: return "Now homing...";
-            case MOVING: return "Movement in progress";
+            case OFF: return "OFF";
+            case OFFLINE: return "OFFLINE";
+            case ERROR: return "ERROR";
+            case LOCK: return "LOCK";
+            case HOMING: return "HOMING";
+            case MOVING: return "MOVING";
             //TODO update. This was set for compatibility purposes
-            case JOGGING: return "Jogging from X: " + pos.x + " Y: " + pos.y;
-            case IDLE: return "Action completed X: " + pos.x + " Y: " + pos.y;
-            default: return "";
+            case JOGGING: return "JOGGING. from: X: " + pos.x + " Y: " + pos.y;
+            case IDLE: return "IDLE in X: " + pos.x + " Y: " + pos.y;
+            default: return "BAD STATUS";
         }
     }
 
