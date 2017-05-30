@@ -477,8 +477,8 @@ bool Mechanical::unlockAxis() {
   if(!sendCommand(LOCK,IDLE,ERROR)) return false;
   
   //update expectations for the future.
+  answered = true;
   expected += 2;
-  infos += 1;
   return true;
 }
 

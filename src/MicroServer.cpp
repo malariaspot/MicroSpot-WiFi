@@ -162,7 +162,9 @@ void MicroServer::run() {
         if(getCharIndex(o, requestBuffer, "1") > -1) mechanical->toggle(true);
         else mechanical->toggle(false);
       }
-      
+    }else if(getCharIndex(urlBuffer, "/unlock") > -1){
+      if(mechanical->unlockAxis()) send(200, "Axis unlocked", &newClient);
+      else send(200, "error unlocking axis", &newClient);
     }else send(404, "Not found!", &newClient); 
   }
 
