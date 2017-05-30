@@ -84,7 +84,7 @@ class Mechanical {
 
     //Status reporting
     bool getPos(WiFiClient client); //Reports current position.
-    int getStatus(); //Returns a number corresponding the status.
+    String getStatus(); //Returns a number corresponding the status.
 
     void addObserver(MicroServer * ms); //ADDED - for the observation pattern
     void run(); //loop function to access scheduling features.

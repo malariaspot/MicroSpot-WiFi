@@ -543,7 +543,7 @@ bool Mechanical::getPos(WiFiClient client) {
 }
 
 //Returns the number of the current status
-int Mechanical::getStatus() { return this->st; }
+String Mechanical::getStatus() { return statusToString(this->st); }
 
 //Ask GRBL for position, and update our local variables.
 bool Mechanical::askPos() {
@@ -557,7 +557,7 @@ bool Mechanical::askPos() {
 void Mechanical::setStatus(Status stat){
   st = stat;
   if(!answered) {
-    microServer->update(statusToString(st));
+    microServer->update(getStatus());
     answered = true;
   }
 }
