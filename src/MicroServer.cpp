@@ -94,8 +94,8 @@ void MicroServer::run() {
       int f = arg("f=");
       if (x > -1 && y > -1 && f > -1) {
         if (mechanical->panAxis(requestBuffer,x,y,f)) currentClient = newClient; 
-        else send(200, "Busy: " + mechanical->getStatus(), &newClient); 
-      }else send(404, "Error: One or more position arguments are missing in pan!", &newClient); 
+        else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient); 
+      }else send(404, "{\"msg\":\"One or more position arguments are missing in pan!\"}", &newClient); 
 
     }else if (getCharIndex(urlBuffer, "/uniJog") > -1){
 
@@ -103,8 +103,8 @@ void MicroServer::run() {
       int f = arg("f=");
       if (c > -1 && f > -1) {
         if (mechanical->uniJog(requestBuffer,c,f)) currentClient = newClient; 
-        else send(200, "Busy: " + mechanical->getStatus(), &newClient); 
-      }else send(404, "Error: One or more position arguments are missing in uniJog!", &newClient); 
+        else send(200,"{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient); 
+      }else send(404, "{\"msg\":\"One or more position arguments are missing in uniJog!\"}", &newClient); 
 
     }else if (getCharIndex(urlBuffer, "/ayy/lmao") > -1) {
 
@@ -112,12 +112,12 @@ void MicroServer::run() {
     }else if (getCharIndex(urlBuffer,"/stop") > -1) {
 
       if (mechanical->stopJog()) currentClient = newClient;
-      else send(200, "Busy: " + mechanical->getStatus(), &newClient);
+      else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
 
     }else if (getCharIndex(urlBuffer, "/home") > -1) {
 
       if (mechanical->homeAxis()) currentClient = newClient; 
-      else send(200, "Busy for home: " + mechanical->getStatus(), &newClient);
+      else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
 
     }else if (getCharIndex(urlBuffer, "/move") > -1) {
 
@@ -126,8 +126,8 @@ void MicroServer::run() {
       int f = arg("f=");
       if (x > -1 && y > -1 && f > -1) {
         if (mechanical->moveAxis(requestBuffer,x,y,f)) currentClient = newClient; 
-        else send(200, "Busy for move: " + mechanical->getStatus(), &newClient); 
-      }else send(404, "Error: One or more position arguments are missing in move!", &newClient); 
+        else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
+      }else send(404, "{\"msg\":\"One or more position arguments are missing in move!\"}", &newClient);
 
     }else if (getCharIndex(urlBuffer,"/jog") > -1) {
 
@@ -138,8 +138,8 @@ void MicroServer::run() {
       int s = arg("s=");
       if (x > -1 && y > -1 && f > -1 && r > -1 && s > -1) {
         if (mechanical->jogAxis(requestBuffer,x,y,f,r,s)) currentClient = newClient; 
-        else send(200, "Busy: " + mechanical->getStatus(), &newClient); 
-      }else send(404, "Error: One or more position arguments are missing in jog!", &newClient); 
+        else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
+      }else send(404, "{\"msg\":\"One or more position arguments are missing in jog!\"}", &newClient); 
       
     }else if (getCharIndex(urlBuffer, "/position") > -1) {
 
@@ -152,7 +152,7 @@ void MicroServer::run() {
         currentClient = newClient;
         mechanical->toggleLight(requestBuffer,l);
       }else{
-        send(404, "Error: Wrong argument in light!", &newClient); 
+        send(404, "{\"msg\":\"Wrong argument in light!\"}", &newClient); 
       }
     }else if(getCharIndex(urlBuffer, "/toggle") > -1){
       
@@ -164,8 +164,8 @@ void MicroServer::run() {
       }
     }else if(getCharIndex(urlBuffer, "/unlock") > -1){
       if(mechanical->unlockAxis()) send(200, "Axis unlocked", &newClient);
-      else send(200, "error unlocking axis", &newClient);
-    }else send(404, "Not found!", &newClient); 
+      else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
+    }else send(404, "{\"msg\":\"Not found\"}", &newClient); 
   }
 
   bufferIndex = 0;
