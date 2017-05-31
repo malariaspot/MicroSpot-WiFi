@@ -45,16 +45,16 @@ class Mechanical {
 
     String statusToString(Status status) {
         switch (status) {
-            case OFF: return "OFF";
-            case OFFLINE: return "OFFLINE";
-            case ERROR: return "ERROR";
-            case LOCK: return "LOCK";
-            case HOMING: return "HOMING";
-            case MOVING: return "MOVING";
+            case OFF: return "{\"msg\":\"OFF\"}";
+            case OFFLINE: return "{\"msg\":\"OFFLINE\"}";
+            case ERROR: return "{\"msg\":\"ERROR\"}";
+            case LOCK: return "{\"msg\":\"LOCK\"}";
+            case HOMING: return "{\"msg\":\"HOMING\"}";
+            case MOVING: return "{\"msg\":\"MOVING\"}";
             //TODO update. This was set for compatibility purposes
-            case JOGGING: return "JOGGING. from: X: " + pos.x + " Y: " + pos.y;
-            case IDLE: return "IDLE in X: " + pos.x + " Y: " + pos.y;
-            default: return "BAD STATUS";
+            case JOGGING: return "{\"msg\":\"JOGGING\",\"pos\":{\"x\":" + pos.x + ",\"y\":" + pos.y"}}";
+            case IDLE: return "{\"msg\":\"IDLE\",\"pos\":{\"x\":" + pos.x + ",\"y\":" + pos.y"}}";
+            default: return {\"msg\":\"BAD STATUS\"}";
         }
     }
 
