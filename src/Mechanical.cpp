@@ -65,19 +65,19 @@ void Mechanical::errorHandler(int errNum){
     case 16:
     case 3:
       answered = true;
-      microServer->update("GRBL didn't understand: " + String(GRBLcommand));
+      microServer->update("{\"msg\":\"BAD COMMAND\",\"val\":" + String(errNum) + ",\"cmd\":\""+ String(GRBLcommand) + "\"}");
       break;
     case 9:
-      microServer->update("GRBL is locked. Home to release");
+      microServer->update("{\"msg\":\"GRBL LOCKED\"}");
       st = LOCK;
       break;
     case 15:
       answered = true;
-      microServer->update("Jog out of bounds");
+      microServer->update("{\"msg\":\"JOG OUT\"}");
       break;
     default:
       answered = true;
-      microServer->update("Error " + String(errNum) + " ocurred");
+      microServer->update("{\"msg\":\"ERROR\",\"val\":" + String(errNum) + "}");
       break;
   }
   return;
@@ -163,10 +163,10 @@ void Mechanical::serialListen(){
             afterPos.x = pos.x;
             afterPos.y = pos.y;
           }
-          microServer->send(200,"Position: X: " + pos.x + " Y: " + pos.y, &askClient);
+          microServer->send(200,"{\"msg\":\"POSITION\",\"pos\":{\"x\":" + pos.x + ",\"y\":" + pos.y + "}}", &askClient);
           break;
         case ALARM:
-          microServer->update("GRBL Alarm : " + String(serialBuffer[lastIndex + 6]));
+          microServer->update("{\"msg\":\"ALARM\",\"val\":" + String(serialBuffer[lastIndex + 6]) + "}");
           reset();
           answered = true;
           restartAll();
@@ -179,7 +179,7 @@ void Mechanical::serialListen(){
         case STARTUP:
           break;
         default:
-          microServer->update("WRONG RESPONSE: " + String(serialBuffer));
+          microServer->update("{\"msg\":\"WRONG RESPONSE\",\"rsp\":\"" + String(serialBuffer) + "\"}");
           answered = true;
           restartAll();
           break;
@@ -514,7 +514,7 @@ bool Mechanical::toggleLight(char * request, int l){
   //this command is answered right here.
   
   answered = true;
-  microServer->update("Light set to " + String(number));
+  microServer->update("{\"msg\":\"LIGHT\",\"val\":" + String(number) + "}");
   return true;
 }
 
@@ -568,8 +568,8 @@ void Mechanical::run(){
     serialStamp = millis();
   }
   if(dogWatching && (millis() - watchDogStamp > WATCHDOG_LIMIT)){
-    microServer->update("WATCHDOG ERROR. Expected = " 
-      + String(expected));
+    microServer->update("{\"msg\":\"WATCHDOG ERROR\",\"val\":" 
+      + String(expected) + "}");
     restartAll();
     dogTriggered = true; //notify the next command to flush any possible serial leftover.
     reset();

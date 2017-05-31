@@ -52,9 +52,9 @@ class Mechanical {
             case HOMING: return "{\"msg\":\"HOMING\"}";
             case MOVING: return "{\"msg\":\"MOVING\"}";
             //TODO update. This was set for compatibility purposes
-            case JOGGING: return "{\"msg\":\"JOGGING\",\"pos\":{\"x\":" + pos.x + ",\"y\":" + pos.y"}}";
-            case IDLE: return "{\"msg\":\"IDLE\",\"pos\":{\"x\":" + pos.x + ",\"y\":" + pos.y"}}";
-            default: return {\"msg\":\"BAD STATUS\"}";
+            case JOGGING: return "{\"msg\":\"JOGGING\",\"pos\":{\"x\":" + pos.x + ",\"y\":" + pos.y + "}}";
+            case IDLE: return "{\"msg\":\"IDLE\",\"pos\":{\"x\":" + pos.x + ",\"y\":" + pos.y + "}}";
+            default: return "{\"msg\":\"BAD STATUS\"}";
         }
     }
 
