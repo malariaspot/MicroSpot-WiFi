@@ -163,7 +163,7 @@ void MicroServer::run() {
         else mechanical->toggle(false);
       }
     }else if(getCharIndex(urlBuffer, "/unlock") > -1){
-      if(mechanical->unlockAxis()) send(200, "Axis unlocked", &newClient);
+      if(mechanical->unlockAxis()) send(200, "{\"msg\":\"Axis unlocked\"}", &newClient);
       else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
     }else send(404, "{\"msg\":\"Not found\"}", &newClient); 
   }
