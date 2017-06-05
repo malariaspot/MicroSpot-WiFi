@@ -500,10 +500,15 @@ bool Mechanical::toggleLight(char * request, int l){
   inputNum = saturate(inputNum, 0, 255);
   
   //Compose the command into GRBLcommand
-  strcpy(GRBLcommand, "M03 S");
   char number[8];
   sprintf(number, "%d", inputNum);
-  strcat(GRBLcommand, number);
+  if(inputNum == 0){
+    strcpy(GRBLcommand, "M05");
+  }else{
+    strcpy(GRBLcommand, "M03 S");
+    strcat(GRBLcommand, number);
+  }
+
   
   //check if the command can be sent, and send it.
   if (!sendCommand(IDLE,st,st)) return false;
