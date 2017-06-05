@@ -145,6 +145,20 @@ void MicroServer::run() {
 
       mechanical->getPos(newClient);
 
+    }else if (getCharIndex(urlBuffer, "/network") > -1) {
+      int n = WiFi.scanNetworks();
+      Serial.println("scan done");
+      if (n != 0) {
+        String res = "networks found: "+ String(n) + "\n\n";
+        for (int i = 0; i < n; ++i) {
+          res += "\n network SSID:" + WiFi.SSID(i) + "\n network RSSI: " + WiFi.RSSI(i) + (WiFi.encryptionType(i) == ENC_TYPE_NONE)?" ":"*\n\n";   
+          delay(10);
+        }
+        send(200, res, &newClient);
+      }else{
+        send(200, "No networks found", &newClient);
+      }
+
     }else if(getCharIndex(urlBuffer, "/light") > -1){
 
       int l = arg("l=");
@@ -173,14 +187,6 @@ void MicroServer::run() {
   memset(urlBuffer, 0, sizeof urlBuffer);
 }
 
-void MicroServer::update(String msg) { send(200, msg, &currentClient); }
-
-/* PRIVATE */
-
-int MicroServer::arg(const char * arg) {
-  return getCharIndex(requestBuffer, arg);
-}
-
 void MicroServer::send(int code, String msg, WiFiClient * client) { 
   String s = "HTTP/1.1 " 
     + String(code) + " OK\r\nContent-Type: application/json\r\n\r\n"
@@ -190,4 +196,12 @@ void MicroServer::send(int code, String msg, WiFiClient * client) {
   client->print(s);
   delay(1);
   client->stop();
+}
+
+void MicroServer::update(String msg) { send(200, msg, &currentClient); }
+
+/* PRIVATE */
+
+int MicroServer::arg(const char * arg) {
+  return getCharIndex(requestBuffer, arg);
 }
