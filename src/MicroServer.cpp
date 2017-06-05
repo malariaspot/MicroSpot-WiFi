@@ -147,18 +147,16 @@ void MicroServer::run() {
 
     }else if (getCharIndex(urlBuffer, "/network") > -1) {
       int n = WiFi.scanNetworks();
-      Serial.println("scan done");
       if (n != 0) {
-        String res = "networks found: "+ String(n) + "\n\n";
+        String res = "networks found: "+ String(n);
         for (int i = 0; i < n; ++i) {
-          res += "\n network SSID:" + WiFi.SSID(i) + "\n network RSSI: " + WiFi.RSSI(i) + (WiFi.encryptionType(i) == ENC_TYPE_NONE)?" ":"*\n\n";   
+          res += " network SSID:" + WiFi.SSID(i) + "\n network RSSI: " + WiFi.RSSI(i) + (WiFi.encryptionType(i) == ENC_TYPE_NONE)?" ":"*";   
           delay(10);
         }
         send(200, res, &newClient);
       }else{
         send(200, "No networks found", &newClient);
       }
-
     }else if(getCharIndex(urlBuffer, "/light") > -1){
 
       int l = arg("l=");
