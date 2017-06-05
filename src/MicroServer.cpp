@@ -107,11 +107,9 @@ void MicroServer::run() {
       }else send(404, "{\"msg\":\"One or more position arguments are missing in uniJog!\"}", &newClient); 
 
     }else if (getCharIndex(urlBuffer, "/ayy/lmao") > -1) {
-      if (getCharIndex(requestBuffer,"User-Agent") > -1) {
-        send(200, "asd", &newClient);
-      }else{
-        send(200, "Ayy Lmao", &newClient);
-      }
+
+      send(200, "Ayy Lmao", &newClient);
+      
     }else if (getCharIndex(urlBuffer,"/stop") > -1) {
 
       if (mechanical->stopJog()) currentClient = newClient;
