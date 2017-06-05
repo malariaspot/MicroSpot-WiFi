@@ -145,18 +145,26 @@ void MicroServer::run() {
 
       mechanical->getPos(newClient);
 
-    }else if (getCharIndex(urlBuffer, "/network") > -1) {
+    /*}else if (getCharIndex(urlBuffer, "/networks") > -1) {
       int n = WiFi.scanNetworks();
       if (n != 0) {
-        String res = "networks found: "+ String(n);
+        String res = "{\"networks\":[";
         for (int i = 0; i < n; ++i) {
-          res += " network SSID:" + WiFi.SSID(i) + "\n network RSSI: " + WiFi.RSSI(i) + (WiFi.encryptionType(i) == ENC_TYPE_NONE)?" ":"*";   
-          delay(10);
+          if(i == n - 1) {
+            res = res + "{\"SSID\":\""
+            + WiFi.SSID(i) + "\",\"RSSI\":\""
+            + WiFi.RSSI(i) + "\"}";
+          }else{
+            res = res + "{\"SSID\":\"" 
+            + WiFi.SSID(i) + "\",\"RSSI\":\""
+            + WiFi.RSSI(i) + "\"},";
+          }
         }
+        res = res + "]}";
         send(200, res, &newClient);
       }else{
         send(200, "No networks found", &newClient);
-      }
+      }*/
     }else if(getCharIndex(urlBuffer, "/light") > -1){
 
       int l = arg("l=");
