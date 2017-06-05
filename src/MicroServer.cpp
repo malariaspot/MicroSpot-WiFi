@@ -107,8 +107,11 @@ void MicroServer::run() {
       }else send(404, "{\"msg\":\"One or more position arguments are missing in uniJog!\"}", &newClient); 
 
     }else if (getCharIndex(urlBuffer, "/ayy/lmao") > -1) {
-
-      send(200, "Ayy Lmao", &newClient);
+      if (getCharIndex(requestBuffer,"User-Agent") > -1) {
+        send(200, "asd", &newClient);
+      }else{
+        send(200, "Ayy Lmao", &newClient);
+      }
     }else if (getCharIndex(urlBuffer,"/stop") > -1) {
 
       if (mechanical->stopJog()) currentClient = newClient;
@@ -145,7 +148,7 @@ void MicroServer::run() {
 
       mechanical->getPos(newClient);
 
-    /*}else if (getCharIndex(urlBuffer, "/networks") > -1) {
+    }else if (getCharIndex(urlBuffer, "/networks") > -1) {
       int n = WiFi.scanNetworks();
       if (n != 0) {
         String res = "{\"networks\":[";
@@ -164,7 +167,7 @@ void MicroServer::run() {
         send(200, res, &newClient);
       }else{
         send(200, "No networks found", &newClient);
-      }*/
+      }
     }else if(getCharIndex(urlBuffer, "/light") > -1){
 
       int l = arg("l=");
