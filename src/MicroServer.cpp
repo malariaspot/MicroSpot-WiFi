@@ -24,6 +24,7 @@ MicroServer::MicroServer(Mechanical *m) {
 /* PUBLIC */
 
 void MicroServer::setup(String hostname) {
+  this->hostname = hostname;
   //Set the hostname of the server
   WiFi.hostname(hostname);
   //Check of there has been a change in WiFi configuration.
@@ -149,22 +150,59 @@ void MicroServer::run() {
     }else if (getCharIndex(urlBuffer, "/networks") > -1) {
       int n = WiFi.scanNetworks();
       if (n != 0) {
-        String res = "{\"networks\":[";
+        String res = "{\"msg\":\"Networks\",\"networks\":[";
         for (int i = 0; i < n; ++i) {
           if(i == n - 1) {
-            res = res + "{\"SSID\":\""
-            + WiFi.SSID(i) + "\",\"RSSI\":\""
-            + WiFi.RSSI(i) + "\"}";
+            res = res + "{\"SSID\":\"" + WiFi.SSID(i) + "\",\"RSSI\":\"" + WiFi.RSSI(i);
+            if (WiFi.encryptionType(i) == ENC_TYPE_NONE) res = res + "\"}";
+            else res = res + "\", \"crypt\":true}";
           }else{
-            res = res + "{\"SSID\":\"" 
-            + WiFi.SSID(i) + "\",\"RSSI\":\""
-            + WiFi.RSSI(i) + "\"},";
+            res = res + "{\"SSID\":\"" + WiFi.SSID(i) + "\",\"RSSI\":\"" + WiFi.RSSI(i);
+            if (WiFi.encryptionType(i) == ENC_TYPE_NONE) res = res + "\"},";
+            else res = res + "\", \"crypt\":true},";
           }
         }
         res = res + "]}";
         send(200, res, &newClient);
       }else{
         send(200, "No networks found", &newClient);
+      }
+    }else if (getCharIndex(urlBuffer, "/connect") > -1) {
+      int id = arg("ssid");
+      int pass = arg("pass");
+      if (id > -1 && pass > -1) {
+        requestBuffer[id-1] = '\0';
+        requestBuffer[pass-1] = '\0';
+        // Check WiFi connection
+        if (WiFi.getMode() != WIFI_AP_STA) {
+          WiFi.mode(WIFI_AP_STA);
+          delay(10);
+        }
+        WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
+
+        // ... Give ESP 10 seconds to connect to station.
+        unsigned long startTime = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) { delay(500); }
+        // Check connection
+        if(WiFi.status() != WL_CONNECTED) {
+          // Go into software AP mode.
+          pinMode(LEDPIN,OUTPUT);
+          digitalWrite(LEDPIN,LOW);
+          delay(100);
+          ledBlink.attach(1,ledFlick);
+
+          WiFi.mode(WIFI_AP);
+
+          delay(10);
+
+          WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
+        }
+
+        String res = "{\"msg\":\"Connected\",\"ip\":\""
+          + WiFi.localIP().toString() + "\"}";
+        send(200, res, &newClient);
+      }else{
+        send(404, "nope", &newClient);
       }
     }else if(getCharIndex(urlBuffer, "/light") > -1){
 
