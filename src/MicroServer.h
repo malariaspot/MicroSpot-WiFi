@@ -23,7 +23,6 @@ class MicroServer {
 		void send(int code ,String msg, WiFiClient * client); //Sends a responce message to a specific client
 
 	private: 
-		String hostname;
 		const char* ap_default_psk = "microspot"; ///< Default PSK.
 		Mechanical *mechanical; //Mechanical object
 		FileManager fileManager; //Config file manager

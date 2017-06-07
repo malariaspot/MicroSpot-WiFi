@@ -5,9 +5,8 @@
 #define LEDPIN 14 //GPIO for the LED
 #define REQUESTBUFFERSIZE 512
 
-const char *ssid = "hotspotlab";
-const char *password = "spotlabwifi";
-String ip = "none not connected!";
+//const char *ssid = "hotspotlab";
+//const char *password = "spotlabwifi";
 
 Ticker ledBlink; // LED ticker and functions to make a Blink
 
@@ -28,67 +27,16 @@ MicroServer::MicroServer(Mechanical *m) {
 /* PUBLIC */
 
 void MicroServer::setup(String hostname) {
-  this->hostname = hostname;
-  //Set the hostname of the server
-  WiFi.hostname(hostname);
 
-  // Check WiFi connection
-  if (WiFi.getMode() != WIFI_AP_STA) {
-    WiFi.mode(WIFI_AP_STA);
-    delay(10);
-  }
+  WiFi.mode(WIFI_AP_STA);
+  delay(10);
+
+  pinMode(LEDPIN,OUTPUT);
+  digitalWrite(LEDPIN,LOW);
+  delay(100);
+  ledBlink.attach(1,ledFlick);
 
   WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
-  WiFi.begin(ssid, password);
-
-  unsigned long startTime = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) { delay(500); }
-
-  if(WiFi.status() != WL_CONNECTED) {
-    pinMode(LEDPIN,OUTPUT);
-    digitalWrite(LEDPIN,LOW);
-    delay(100);
-    ledBlink.attach(1,ledFlick);
-  }else{
-    ip = WiFi.localIP().toString();
-  }
-
-  /*//Check of there has been a change in WiFi configuration.
-  String station_ssid, station_psk;
-  // Load wifi connection information.
-  if (! fileManager.loadWifiConfig(&station_ssid, &station_psk)) {
-    station_ssid = "";
-    station_psk = "";
-  }
-  // Check WiFi connection
-  if (WiFi.getMode() != WIFI_STA) {
-    WiFi.mode(WIFI_STA);
-    delay(10);
-  }
-  // ... Compare file config with sdk config.
-  if (WiFi.SSID() != station_ssid || WiFi.psk() != station_psk) {
-    WiFi.begin(station_ssid.c_str(), station_psk.c_str());
-  }else{
-    // ... Begin with sdk config.
-    WiFi.begin();
-  }
-  // ... Give ESP 10 seconds to connect to station.
-  unsigned long startTime = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) { delay(500); }
-  // Check connection
-  if(WiFi.status() != WL_CONNECTED) {
-    // Go into software AP mode.
-    pinMode(LEDPIN,OUTPUT);
-    digitalWrite(LEDPIN,LOW);
-    delay(100);
-    ledBlink.attach(1,ledFlick);
-
-    WiFi.mode(WIFI_AP);
-
-    delay(10);
-
-    WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
-  }*/
 
   serverWifi.begin();
   mechanical->toggle(true);
@@ -194,44 +142,29 @@ void MicroServer::run() {
         send(200, "No networks found", &newClient);
       }
     }else if (getCharIndex(urlBuffer, "/connect") > -1) {
-      /*int id = arg("ssid");
+      int id = arg("ssid");
       int pass = arg("pass");
       if (id > -1 && pass > -1) {
+
         requestBuffer[id-1] = '\0';
         requestBuffer[pass-1] = '\0';
-        // Check WiFi connection
-        if (WiFi.getMode() != WIFI_AP_STA) {
-          WiFi.mode(WIFI_AP_STA);
-          delay(10);
-        }
+
         WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
 
-        // ... Give ESP 10 seconds to connect to station.
         unsigned long startTime = millis();
         while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) { delay(500); }
-        // Check connection
+
         if(WiFi.status() != WL_CONNECTED) {
-          // Go into software AP mode.
-          pinMode(LEDPIN,OUTPUT);
-          digitalWrite(LEDPIN,LOW);
-          delay(100);
-          ledBlink.attach(1,ledFlick);
-
-          WiFi.mode(WIFI_AP);
-
-          delay(10);
-
-          WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
+          send(200, "{\"msg\":\"Couldn't connect!\"}", &newClient); 
         }
 
         String res = "{\"msg\":\"Connected\",\"ip\":\""
           + WiFi.localIP().toString() + "\"}";
+
         send(200, res, &newClient);
       }else{
         send(404, "nope", &newClient);
       }
-      */
-      send(200, ip, &newClient);
     }else if(getCharIndex(urlBuffer, "/light") > -1){
 
       int l = arg("l=");
