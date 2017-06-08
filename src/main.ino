@@ -33,6 +33,9 @@ MicroServer microServer(&mechanical);
 ///////////////////////////////////////////////
 void setup() { 
   
+  delay(2000);
+  mechanical.toggle(true);
+  
   String hostname(HOSTNAME);
   hostname += String(ESP.getChipId(), HEX);
 
