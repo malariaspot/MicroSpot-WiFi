@@ -77,7 +77,7 @@ void Mechanical::errorHandler(int errNum){
       break;
     default:
       answered = true;
-      microServer->update("{\"msg\":\"ERROR\",\"val\":" + String(errNum) + "}");
+      microServer->update("{\"msg\":\"ERROR\",\"val\":" + String(errNum) + ",\"cmd\":\"" + String(GRBLcommand) +"\"}");
       break;
   }
   return;
@@ -269,6 +269,7 @@ bool Mechanical::toggle(bool button) {
         return false;
       }
     }
+    answered = true;
     setStatus(LOCK);
     homeAxis();
     return true;
@@ -377,7 +378,7 @@ bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
     GRBLcommand[0] = '\0'; //make strcat write from the beggining.
   }
   strcat(GRBLcommand, "$J=");
-  if(getCharIndex(r,reqBuffer,"true")){
+  if(getCharIndex(r,reqBuffer,"true") > -1){
     strcat(GRBLcommand, "G91 ");
   }else{
     strcat(GRBLcommand, "G90 ");
@@ -387,7 +388,7 @@ bool Mechanical::jogAxis(char * request, int x, int y, int f, int r, int s) {
   strcat(GRBLcommand, "Y");
   strcat(GRBLcommand, reqBuffer + y + 2);
   strcat(GRBLcommand, "F");
-  strcat(GRBLcommand, reqBuffer + y + 2);
+  strcat(GRBLcommand, reqBuffer + f + 2);
   
   //check if the command can be sent, and send it.
   if(!sendCommand(JOGGING, JOGGING, ERROR)) return false;
@@ -511,7 +512,11 @@ bool Mechanical::toggleLight(char * request, int l){
 
   
   //check if the command can be sent, and send it.
-  if (!sendCommand(IDLE,st,st)) return false;
+  if (!sendCommand(JOGGING,st,st)) {
+    answered = true;
+    microServer->update("{\"msg\":\"Busy\",\"status\":" + getStatus() + "}");
+    return false;
+  }
   
   //update expectations for the future
   expected += 2;
