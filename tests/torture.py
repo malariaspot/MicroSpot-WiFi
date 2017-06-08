@@ -2,6 +2,7 @@ import urllib.request as urllib2
 import time
 import math
 import sys
+import re
 
 frequency = 0.15
 count = 0
@@ -15,10 +16,17 @@ class CircleIterator:
         self.angle = self.angle + 5
         return [0.2*math.cos(self.angle*math.pi/180),0.2*math.sin(self.angle*math.pi/180)]
 
-# ip = sys.argv[1:]
-# if ip is None:
-#     print("Please provide an IP")
-#     exit()
+
+pattern = re.compile("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}")
+
+try:
+    ip = str(sys.argv[1])
+except:
+    print("Please provide an IP")
+    exit()
+if pattern.match(ip) is None:
+    print("Please provide a proper IP")
+    exit()
 
 c = CircleIterator()
 timestamp = time.time()
@@ -26,13 +34,13 @@ speed = 6/frequency
 f = '%.3f' % speed
 
 try:
-    request = urllib2.Request("http://192.168.4.1/ayy/lmao")
+    request = urllib2.Request("http://" + ip + "/ayy/lmao")
     request.add_header('User-Agent','MicroSpotApp/1.0 +http://malariaspot.org')
     print(urllib2.urlopen(request).read())
-    request = urllib2.Request("http://192.168.4.1/home")
+    request = urllib2.Request("http://" + ip + "/home")
     request.add_header('User-Agent','MicroSpotApp/1.0 +http://malariaspot.org')
     print(urllib2.urlopen(request).read())
-    request = urllib2.Request("http://192.168.4.1/move?x=25&y=7.5&f=500")
+    request = urllib2.Request("http://" + ip + "/move?x=25&y=7.5&f=500")
     request.add_header('User-Agent','MicroSpotApp/1.0 +http://malariaspot.org')
     print(urllib2.urlopen(request).read())
 except:
@@ -47,7 +55,7 @@ while True:
         x = '%.3f' % list[0]
         y = '%.3f' % list[1]
         try:
-            request = urllib2.Request("http://192.168.4.1/pan?x=" + x + "&y=" + y + "&f=" + f)
+            request = urllib2.Request("http://" + ip + "/pan?x=" + x + "&y=" + y + "&f=" + f)
             request.add_header('User-Agent','MicroSpotApp/1.0 +http://malariaspot.org')
             before = time.time()
             print(urllib2.urlopen(request).read())
