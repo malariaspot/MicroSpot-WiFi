@@ -17,6 +17,8 @@ char requestBuffer[REQUESTBUFFERSIZE];
 char urlBuffer[32];
 int bufferIndex;
 
+String _hostname;
+
 /* INIT */
 
 MicroServer::MicroServer(Mechanical *m) {
@@ -28,6 +30,7 @@ MicroServer::MicroServer(Mechanical *m) {
 
 void MicroServer::setup(String hostname) {
 
+  _hostname = hostname;
   WiFi.mode(WIFI_AP);
   delay(10);
 
@@ -186,6 +189,21 @@ void MicroServer::run() {
     }else if(getCharIndex(urlBuffer, "/unlock") > -1){
       if(mechanical->unlockAxis()) send(200, "{\"msg\":\"Axis unlocked\"}", &newClient);
       else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
+    
+    }else if(getCharIndex(urlBuffer, "/disconnect") > -1){
+      send(200,
+        "{\"msg\":\"Disconnected\",\"ssid\":\"" +
+        _hostname +
+        "\",\"ip\":\"192.168.4.1\"}", //hardcoded IP
+        &newClient);
+      
+      WiFi.mode(WIFI_AP);
+      WiFi.softAP((const char *)_hostname.c_str(), this->ap_default_psk);
+      
+    }else if(getCharIndex(urlBuffer, "/ ")){
+      send(200,
+        "{\"msg\":\"Info\"}",
+        &newClient);
     }else send(404, "{\"msg\":\"Not found\"}", &newClient); 
   }
 
