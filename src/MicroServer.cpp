@@ -28,7 +28,7 @@ MicroServer::MicroServer(Mechanical *m) {
 
 void MicroServer::setup(String hostname) {
 
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_AP);
   delay(10);
 
   pinMode(LEDPIN,OUTPUT);
@@ -149,6 +149,7 @@ void MicroServer::run() {
         requestBuffer[id-1] = '\0';
         requestBuffer[pass-1] = '\0';
 
+        WiFi.mode(WIFI_AP_STA);
         WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
 
         unsigned long startTime = millis();
