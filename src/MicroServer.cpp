@@ -32,7 +32,8 @@ MicroServer::MicroServer(Mechanical *m) {
 void MicroServer::setup(String hostname) {
 
   _hostname = hostname;
-  WiFi.mode(WIFI_AP);
+  WiFi.setAutoReconnect(false);
+  WiFi.mode(WIFI_AP_STA);
   delay(10);
 
   pinMode(LEDPIN,OUTPUT);
@@ -172,11 +173,12 @@ void MicroServer::run() {
         }
 
         String res = "{\"msg\":\"Connected\",\"ip\":\""
-          + WiFi.localIP().toString() + "\"}";
+          + WiFi.localIP().toString() + "\",\"SSID\":\""
+          + WiFi.SSID() +"\"}";
 
         send(200, res, &newClient);
       }else{
-        send(404, "nope", &newClient);
+        send(404, "{\"msg\":\"ssid & pass missing!\"}", &newClient);
       }
     }else if(getCharIndex(urlBuffer, "/light") > -1){
 
@@ -200,19 +202,23 @@ void MicroServer::run() {
       else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
     
     }else if(getCharIndex(urlBuffer, "/disconnect") > -1){
-      send(200,
-        "{\"msg\":\"Disconnected\",\"ssid\":\"" +
-        _hostname +
-        "\",\"ip\":\"192.168.4.1\"}", //hardcoded IP
-        &newClient);
-      
-      WiFi.mode(WIFI_AP);
-      WiFi.softAP((const char *)_hostname.c_str(), this->ap_default_psk);
-      
-    }else if(getCharIndex(urlBuffer, "/ ")){
-      send(200,
-        "{\"msg\":\"Info\"}",
-        &newClient);
+
+        WiFi.disconnect();
+        send(200, "{\"msg\":\"Disconnected\",\"ssid\":\"" + _hostname + "\",\"ip\":\""
+          + WiFi.softAPIP().toString()+"\"}", &newClient);
+
+    }else if(getCharIndex(urlBuffer, "/info") > -1){
+      String info = "{\"msg\":\"Info\",\"AP\":{\"ip\":\""
+        +WiFi.softAPIP().toString()+"\", \"SSID\":\""
+        +_hostname+"\"}";
+
+      if(WiFi.SSID() != "") {
+        info = info + ",\"STA\":{\"ip\":\"" + WiFi.localIP() + "\", \"SSID\":\"" + WiFi.SSID() + "\"}}";
+      }else{
+        info = info + "}";
+      }
+
+      send(200, info, &newClient);
     }else send(404, "{\"msg\":\"Not found\"}", &newClient); 
   }
 
