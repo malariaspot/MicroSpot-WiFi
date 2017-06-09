@@ -44,7 +44,6 @@ void MicroServer::setup(String hostname) {
   WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
 
   serverWifi.begin();
-  mechanical->toggle(true);
 }
 
 void MicroServer::run() {
