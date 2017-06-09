@@ -3,7 +3,11 @@
 #include <Ticker.h>
 
 #define LEDPIN 14 //GPIO for the LED
-#define REQUESTBUFFERSIZE 512
+#define REQUESTBUFFERSIZE 1024
+#define URLBUFFERSIZE 32
+
+//const char *ssid = "hotspotlab";
+//const char *password = "spotlabwifi";
 
 Ticker ledBlink; // LED ticker and functions to make a Blink
 
@@ -11,8 +15,10 @@ void ledFlick() { digitalWrite(LEDPIN,!digitalRead(LEDPIN)); }
 
 WiFiServer serverWifi(80);
 char requestBuffer[REQUESTBUFFERSIZE];
-char urlBuffer[32];
+char urlBuffer[URLBUFFERSIZE];
 int bufferIndex;
+
+String _hostname;
 
 /* INIT */
 
@@ -24,44 +30,18 @@ MicroServer::MicroServer(Mechanical *m) {
 /* PUBLIC */
 
 void MicroServer::setup(String hostname) {
-  //Set the hostname of the server
-  WiFi.hostname(hostname);
-  //Check of there has been a change in WiFi configuration.
-  String station_ssid, station_psk;
-  // Load wifi connection information.
-  if (! fileManager.loadWifiConfig(&station_ssid, &station_psk)) {
-    station_ssid = "";
-    station_psk = "";
-  }
-  // Check WiFi connection
-  if (WiFi.getMode() != WIFI_STA) {
-    WiFi.mode(WIFI_STA);
-    delay(10);
-  }
-  // ... Compare file config with sdk config.
-  if (WiFi.SSID() != station_ssid || WiFi.psk() != station_psk) {
-    WiFi.begin(station_ssid.c_str(), station_psk.c_str());
-  }else{
-    // ... Begin with sdk config.
-    WiFi.begin();
-  }
-  // ... Give ESP 10 seconds to connect to station.
-  unsigned long startTime = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) { delay(500); }
-  // Check connection
-  if(WiFi.status() != WL_CONNECTED) {
-    // Go into software AP mode.
-    pinMode(LEDPIN,OUTPUT);
-    digitalWrite(LEDPIN,LOW);
-    delay(100);
-    ledBlink.attach(1,ledFlick);
 
-    WiFi.mode(WIFI_AP);
+  _hostname = hostname;
+  WiFi.setAutoReconnect(false);
+  WiFi.mode(WIFI_AP_STA);
+  delay(10);
 
-    delay(10);
+  pinMode(LEDPIN,OUTPUT);
+  digitalWrite(LEDPIN,LOW);
+  delay(100);
+  ledBlink.attach(1,ledFlick);
 
-    WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
-  }
+  WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
 
   serverWifi.begin();
   mechanical->toggle(true);
@@ -77,6 +57,14 @@ void MicroServer::run() {
     while(newClient.available()) {
       requestBuffer[bufferIndex] =  newClient.read();
       bufferIndex++;
+    }
+
+    //Filter requests that don't come from the app.
+    int user = getCharIndex(requestBuffer, "User-Agent");
+    if(user > -1) user = getCharIndex(requestBuffer, "MicroSpotApp");
+    if(user == -1) {
+      send(200, "Please connect from the App", &newClient);
+      return;
     }
 
     int questionMarkIndex = getCharIndex(requestBuffer, "?");
@@ -109,6 +97,7 @@ void MicroServer::run() {
     }else if (getCharIndex(urlBuffer, "/ayy/lmao") > -1) {
 
       send(200, "Ayy Lmao", &newClient);
+      
     }else if (getCharIndex(urlBuffer,"/stop") > -1) {
 
       if (mechanical->stopJog()) currentClient = newClient;
@@ -145,6 +134,52 @@ void MicroServer::run() {
 
       mechanical->getPos(newClient);
 
+    }else if (getCharIndex(urlBuffer, "/networks") > -1) {
+      int n = WiFi.scanNetworks();
+      if (n != 0) {
+        String res = "{\"msg\":\"Networks\",\"networks\":[";
+        for (int i = 0; i < n; ++i) {
+          if(i == n - 1) {
+            res = res + "{\"SSID\":\"" + WiFi.SSID(i) + "\",\"RSSI\":\"" + WiFi.RSSI(i);
+            if (WiFi.encryptionType(i) == ENC_TYPE_NONE) res = res + "\"}";
+            else res = res + "\", \"crypt\":true}";
+          }else{
+            res = res + "{\"SSID\":\"" + WiFi.SSID(i) + "\",\"RSSI\":\"" + WiFi.RSSI(i);
+            if (WiFi.encryptionType(i) == ENC_TYPE_NONE) res = res + "\"},";
+            else res = res + "\", \"crypt\":true},";
+          }
+        }
+        res = res + "]}";
+        send(200, res, &newClient);
+      }else{
+        send(200, "No networks found", &newClient);
+      }
+    }else if (getCharIndex(urlBuffer, "/connect") > -1) {
+      int id = arg("ssid");
+      int pass = arg("pass");
+      if (id > -1 && pass > -1) {
+
+        requestBuffer[id-1] = '\0';
+        requestBuffer[pass-1] = '\0';
+
+        WiFi.mode(WIFI_AP_STA);
+        WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
+
+        unsigned long startTime = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) { delay(500); }
+
+        if(WiFi.status() != WL_CONNECTED) {
+          send(200, "{\"msg\":\"Couldn't connect!\"}", &newClient); 
+        }
+
+        String res = "{\"msg\":\"Connected\",\"ip\":\""
+          + WiFi.localIP().toString() + "\",\"SSID\":\""
+          + WiFi.SSID() +"\"}";
+
+        send(200, res, &newClient);
+      }else{
+        send(404, "{\"msg\":\"ssid & pass missing!\"}", &newClient);
+      }
     }else if(getCharIndex(urlBuffer, "/light") > -1){
 
       int l = arg("l=");
@@ -165,20 +200,31 @@ void MicroServer::run() {
     }else if(getCharIndex(urlBuffer, "/unlock") > -1){
       if(mechanical->unlockAxis()) send(200, "{\"msg\":\"Axis unlocked\"}", &newClient);
       else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
+    
+    }else if(getCharIndex(urlBuffer, "/disconnect") > -1){
+
+        WiFi.disconnect();
+        send(200, "{\"msg\":\"Disconnected\",\"ssid\":\"" + _hostname + "\",\"ip\":\""
+          + WiFi.softAPIP().toString()+"\"}", &newClient);
+
+    }else if(getCharIndex(urlBuffer, "/info") > -1){
+      String info = "{\"msg\":\"Info\",\"AP\":{\"ip\":\""
+        +WiFi.softAPIP().toString()+"\", \"SSID\":\""
+        +_hostname+"\"}";
+
+      if(WiFi.SSID() != "") {
+        info = info + ",\"STA\":{\"ip\":\"" + WiFi.localIP() + "\", \"SSID\":\"" + WiFi.SSID() + "\"}}";
+      }else{
+        info = info + "}";
+      }
+
+      send(200, info, &newClient);
     }else send(404, "{\"msg\":\"Not found\"}", &newClient); 
   }
 
   bufferIndex = 0;
   memset(requestBuffer, 0, sizeof requestBuffer);
   memset(urlBuffer, 0, sizeof urlBuffer);
-}
-
-void MicroServer::update(String msg) { send(200, msg, &currentClient); }
-
-/* PRIVATE */
-
-int MicroServer::arg(const char * arg) {
-  return getCharIndex(requestBuffer, arg);
 }
 
 void MicroServer::send(int code, String msg, WiFiClient * client) { 
@@ -190,4 +236,12 @@ void MicroServer::send(int code, String msg, WiFiClient * client) {
   client->print(s);
   delay(1);
   client->stop();
+}
+
+void MicroServer::update(String msg) { send(200, msg, &currentClient); }
+
+/* PRIVATE */
+
+int MicroServer::arg(const char * arg) {
+  return getCharIndex(requestBuffer, arg);
 }
