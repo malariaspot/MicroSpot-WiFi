@@ -3,7 +3,8 @@
 #include <Ticker.h>
 
 #define LEDPIN 14 //GPIO for the LED
-#define REQUESTBUFFERSIZE 512
+#define REQUESTBUFFERSIZE 1024
+#define URLBUFFERSIZE 32
 
 //const char *ssid = "hotspotlab";
 //const char *password = "spotlabwifi";
@@ -14,7 +15,7 @@ void ledFlick() { digitalWrite(LEDPIN,!digitalRead(LEDPIN)); }
 
 WiFiServer serverWifi(80);
 char requestBuffer[REQUESTBUFFERSIZE];
-char urlBuffer[32];
+char urlBuffer[URLBUFFERSIZE];
 int bufferIndex;
 
 String _hostname;
@@ -55,6 +56,14 @@ void MicroServer::run() {
     while(newClient.available()) {
       requestBuffer[bufferIndex] =  newClient.read();
       bufferIndex++;
+    }
+
+    //Filter requests that don't come from the app.
+    int user = getCharIndex(requestBuffer, "User-Agent");
+    if(user > -1) user = getCharIndex(requestBuffer, "MicroSpotApp");
+    if(user == -1) {
+      send(200, "Please connect from the App", &newClient);
+      return;
     }
 
     int questionMarkIndex = getCharIndex(requestBuffer, "?");
