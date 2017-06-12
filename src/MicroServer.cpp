@@ -208,7 +208,7 @@ void MicroServer::run() {
         +_hostname+"\"}";
 
       if(WiFi.SSID() != "") {
-        info = info + ",\"STA\":{\"ip\":\"" + WiFi.localIP() + "\", \"SSID\":\"" + WiFi.SSID() + "\"}}";
+        info = info + ",\"STA\":{\"ip\":\"" + WiFi.localIP().toString() + "\", \"SSID\":\"" + WiFi.SSID() + "\"}}";
       }else{
         info = info + "}";
       }
