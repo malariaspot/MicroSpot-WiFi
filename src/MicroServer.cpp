@@ -158,7 +158,6 @@ void MicroServer::run() {
         requestBuffer[id-1] = '\0';
         requestBuffer[pass-1] = '\0';
 
-        WiFi.mode(WIFI_AP_STA);
         WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
 
         unsigned long startTime = millis();
