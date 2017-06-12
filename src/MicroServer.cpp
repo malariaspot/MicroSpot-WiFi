@@ -164,10 +164,11 @@ void MicroServer::run() {
         while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) { delay(500); }
 
         if(WiFi.status() != WL_CONNECTED) {
-          send(200, "{\"msg\":\"Couldn't connect!\"}", &newClient); 
+          send(200, "{\"msg\":\"Couldn't connect\"}", &newClient); 
         }
 
-        String res = "{\"msg\":\"Connected\",\"ip\":\""
+        String res = "{\"msg\":\"Connected to " 
+          + WiFi.SSID() + " \",\"ip\":\""
           + WiFi.localIP().toString() + "\",\"SSID\":\""
           + WiFi.SSID() +"\"}";
 
@@ -207,7 +208,7 @@ void MicroServer::run() {
         +WiFi.softAPIP().toString()+"\", \"SSID\":\""
         +_hostname+"\"}";
 
-      if(WiFi.SSID() != "") {
+      if(WiFi.status() == WL_CONNECTED) {
         info = info + ",\"STA\":{\"ip\":\"" + WiFi.localIP().toString() + "\", \"SSID\":\"" + WiFi.SSID() + "\"}}";
       }else{
         info = info + "}";
