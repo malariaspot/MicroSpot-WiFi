@@ -33,12 +33,9 @@ void MicroServer::setup(String hostname) {
 
   _hostname = hostname;
 
-  if (WiFi.getMode() != WIFI_AP_STA) {
-    WiFi.mode(WIFI_AP_STA);
-    delay(10);
-  }
-
+  WiFi.mode(WIFI_AP_STA);
   WiFi.setAutoReconnect(false);
+  delay(10);
 
   pinMode(LEDPIN,OUTPUT);
   digitalWrite(LEDPIN,LOW);
@@ -169,14 +166,14 @@ void MicroServer::run() {
 
         if(WiFi.status() != WL_CONNECTED) {
           send(200, "{\"msg\":\"Couldn't connect\"}", &newClient); 
-        }
-
-        String res = "{\"msg\":\"Connected to " 
+        }else{
+          String res = "{\"msg\":\"Connected to " 
           + WiFi.SSID() + " \",\"ip\":\""
           + WiFi.localIP().toString() + "\",\"SSID\":\""
           + WiFi.SSID() +"\"}";
 
-        send(200, res, &newClient);
+         send(200, res, &newClient);
+        }
       }else{
         send(404, "{\"msg\":\"ssid & pass missing!\"}", &newClient);
       }
