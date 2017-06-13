@@ -32,9 +32,13 @@ MicroServer::MicroServer(Mechanical *m) {
 void MicroServer::setup(String hostname) {
 
   _hostname = hostname;
-  WiFi.mode(WIFI_AP_STA);
+
+  if (WiFi.getMode() != WIFI_AP_STA) {
+    WiFi.mode(WIFI_AP_STA);
+    delay(10);
+  }
+
   WiFi.setAutoReconnect(false);
-  delay(10);
 
   pinMode(LEDPIN,OUTPUT);
   digitalWrite(LEDPIN,LOW);
