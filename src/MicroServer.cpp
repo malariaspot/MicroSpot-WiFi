@@ -32,8 +32,9 @@ MicroServer::MicroServer(Mechanical *m) {
 void MicroServer::setup(String hostname) {
 
   _hostname = hostname;
-  WiFi.setAutoReconnect(false);
+
   WiFi.mode(WIFI_AP_STA);
+  WiFi.setAutoReconnect(false);
   delay(10);
 
   pinMode(LEDPIN,OUTPUT);
@@ -93,10 +94,6 @@ void MicroServer::run() {
         else send(200,"{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient); 
       }else send(404, "{\"msg\":\"One or more position arguments are missing in uniJog!\"}", &newClient); 
 
-    }else if (getCharIndex(urlBuffer, "/ayy/lmao") > -1) {
-
-      send(200, "Ayy Lmao", &newClient);
-      
     }else if (getCharIndex(urlBuffer,"/stop") > -1) {
 
       if (mechanical->stopJog()) currentClient = newClient;
@@ -151,7 +148,7 @@ void MicroServer::run() {
         res = res + "]}";
         send(200, res, &newClient);
       }else{
-        send(200, "No networks found", &newClient);
+        send(200, "{\"msg\":\"No networks found\"}", &newClient);
       }
     }else if (getCharIndex(urlBuffer, "/connect") > -1) {
       int id = arg("ssid");
@@ -161,21 +158,21 @@ void MicroServer::run() {
         requestBuffer[id-1] = '\0';
         requestBuffer[pass-1] = '\0';
 
-        WiFi.mode(WIFI_AP_STA);
         WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
 
         unsigned long startTime = millis();
         while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) { delay(500); }
 
         if(WiFi.status() != WL_CONNECTED) {
-          send(200, "{\"msg\":\"Couldn't connect!\"}", &newClient); 
-        }
-
-        String res = "{\"msg\":\"Connected\",\"ip\":\""
+          send(200, "{\"msg\":\"Couldn't connect\"}", &newClient); 
+        }else{
+          String res = "{\"msg\":\"Connected to " 
+          + WiFi.SSID() + " \",\"ip\":\""
           + WiFi.localIP().toString() + "\",\"SSID\":\""
           + WiFi.SSID() +"\"}";
 
-        send(200, res, &newClient);
+         send(200, res, &newClient);
+        }
       }else{
         send(404, "{\"msg\":\"ssid & pass missing!\"}", &newClient);
       }
@@ -211,8 +208,8 @@ void MicroServer::run() {
         +WiFi.softAPIP().toString()+"\", \"SSID\":\""
         +_hostname+"\"}";
 
-      if(WiFi.SSID() != "") {
-        info = info + ",\"STA\":{\"ip\":\"" + WiFi.localIP() + "\", \"SSID\":\"" + WiFi.SSID() + "\"}}";
+      if(WiFi.status() == WL_CONNECTED) {
+        info = info + ",\"STA\":{\"ip\":\"" + WiFi.localIP().toString() + "\", \"SSID\":\"" + WiFi.SSID() + "\"}}";
       }else{
         info = info + "}";
       }
