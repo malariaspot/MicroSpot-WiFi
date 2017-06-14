@@ -6,9 +6,6 @@
 #define REQUESTBUFFERSIZE 1024
 #define URLBUFFERSIZE 32
 
-//const char *ssid = "hotspotlab";
-//const char *password = "spotlabwifi";
-
 Ticker ledBlink; // LED ticker and functions to make a Blink
 
 void ledFlick() { digitalWrite(LEDPIN,!digitalRead(LEDPIN)); }
@@ -151,6 +148,9 @@ void MicroServer::run() {
         send(200, "{\"msg\":\"No networks found\"}", &newClient);
       }
     }else if (getCharIndex(urlBuffer, "/connect") > -1) {
+
+      if(WiFi.status() == WL_CONNECTED) { WiFi.disconnect(); }
+
       int id = arg("ssid");
       int pass = arg("pass");
       if (id > -1 && pass > -1) {
