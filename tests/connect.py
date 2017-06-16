@@ -37,4 +37,6 @@ url='http://' + ip +'/connect'
 headers ={'User-Agent': 'MicroSpotApp'}
 data = {'ssid': ssid, 'pass': password }
 r = requests.post(url, headers=headers, data=data)
+print(r.request.headers)
+print(r.request.body)
 print(r.text)
