@@ -30,6 +30,7 @@ void MicroServer::setup(String hostname) {
 
   _hostname = hostname;
 
+
   WiFi.mode(WIFI_AP_STA);
   WiFi.setAutoReconnect(false);
   delay(10);
@@ -56,6 +57,8 @@ void MicroServer::run() {
       bufferIndex++;
     }
 
+    requestBuffer[bufferIndex] = '\0';
+
     //Filter requests that don't come from the app.
     int user = getCharIndex(requestBuffer, "User-Agent");
     if(user > -1) user = getCharIndex(requestBuffer, "MicroSpotApp");
@@ -63,7 +66,7 @@ void MicroServer::run() {
       send(200, "Please connect from the App", &newClient);
       return;
     }
-    
+
     newClient.flush();
 
     if(getCharIndex(requestBuffer, "GET") > -1){
@@ -124,7 +127,7 @@ void MicroServer::run() {
           if (mechanical->jogAxis(requestBuffer,x,y,f,r,s)) currentClient = newClient; 
           else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
         }else send(404, "{\"msg\":\"One or more position arguments are missing in jog!\"}", &newClient); 
-        
+
       }else if (getCharIndex(urlBuffer, "/position") > -1) {
 
         mechanical->getPos(newClient);
@@ -159,7 +162,7 @@ void MicroServer::run() {
           send(404, "{\"msg\":\"Wrong argument in light!\"}", &newClient); 
         }
       }else if(getCharIndex(urlBuffer, "/toggle") > -1){
-        
+
         int o = arg("o=");
         if (o > -1){
           currentClient = newClient;
@@ -196,13 +199,15 @@ void MicroServer::run() {
 
         int id = getCharIndex(requestBuffer, "ssid");
         int pass = getCharIndex(requestBuffer, "pass");
-        if (id > -1 && pass > -1) {
+        if (id > -1) {
 
           requestBuffer[id-1] = '\0';
-          requestBuffer[pass-1] = '\0';
 
-          WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
-
+          if(pass > -1){
+            requestBuffer[pass-1] = '\0';
+            WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
+          }else WiFi.begin(requestBuffer+id+5);
+          
           unsigned long startTime = millis();
           while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) { delay(500); }
 
@@ -217,7 +222,7 @@ void MicroServer::run() {
            send(200, res, &newClient);
           }
         }else{
-          send(404, "{\"msg\":\"ssid & pass missing!\"}", &newClient);
+          send(404, "{\"msg\":\"ssid missing!\",\"buffer\":\"" + String(requestBuffer) + "\"}", &newClient);
         }
       }else send(404, "{\"msg\":\"Post method not found\"}", &newClient); 
     }else{
