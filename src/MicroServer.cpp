@@ -148,6 +148,7 @@ void MicroServer::run() {
               }
             }
             res = res + "]}";
+            WiFi.mode(WIFI_AP);
             send(200, res, &newClient);
           }else{
             send(200, "{\"msg\":\"No networks found\"}", &newClient);
