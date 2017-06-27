@@ -32,6 +32,7 @@ void MicroServer::setup(String hostname) {
 
 
   WiFi.setAutoReconnect(false);
+  WiFi.setAutoConnect(false);
   WiFi.mode(WIFI_AP);
   delay(10);
 
@@ -195,11 +196,7 @@ void MicroServer::run() {
       }else if(getCharIndex(requestBuffer, "POST") > -1){
         if (getCharIndex(requestBuffer, "/connect") > -1) {
 
-          if(WiFi.status() == WL_CONNECTED) { WiFi.disconnect(); }
-
-          WiFi.setAutoReconnect(false);
-          WiFi.mode(WIFI_AP_STA);
-          delay(10);
+          //if(WiFi.status() == WL_CONNECTED) { WiFi.disconnect(); }
           
           int bodyIndex = getCharIndex(requestBuffer, "\r\n\r\n");
           int id = getCharIndex(bodyIndex, requestBuffer, "ssid");
@@ -207,6 +204,11 @@ void MicroServer::run() {
           if (id > -1 || bodyIndex > -1) {
 
             requestBuffer[id-1] = '\0';
+
+            WiFi.setAutoReconnect(false);
+            WiFi.setAutoConnect(false);
+            WiFi.mode(WIFI_AP_STA);
+            delay(10);
 
             if(pass > -1){
               requestBuffer[pass-1] = '\0';
@@ -218,6 +220,7 @@ void MicroServer::run() {
 
             if(WiFi.status() != WL_CONNECTED) {
               send(200, "{\"msg\":\"Couldn't connect\"}", &newClient); 
+              WiFi.mode(WIFI_AP);
             }else{
               String res = "{\"msg\":\"Connected to " 
               + WiFi.SSID() + " \",\"ip\":\""
@@ -228,6 +231,7 @@ void MicroServer::run() {
             }
           }else{
             send(404, "{\"msg\":\"ssid missing!\",\"buffer\":\"" + String(requestBuffer) + "\"}", &newClient);
+            WiFi.mode(WIFI_AP);
           }
         }else send(404, "{\"msg\":\"Post method not found\"}", &newClient); 
       }else{

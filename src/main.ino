@@ -24,7 +24,11 @@
 //
 ///////////////////////////////////////////////
 
-Mechanical mechanical(115200);
+#ifdef DEBUG_ESP_PORT
+  Mechanical mechanical(9600);
+#else
+  Mechanical mechanical(115200);
+#endif
 MicroServer microServer(&mechanical);
 
 ///////////////////////////////////////////////
