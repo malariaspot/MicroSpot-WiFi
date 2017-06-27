@@ -221,6 +221,7 @@ void MicroServer::run() {
 
             if(WiFi.status() != WL_CONNECTED) {
               send(200, "{\"msg\":\"Couldn't connect\"}", &newClient); 
+              WiFi.disconnect();
               WiFi.mode(WIFI_AP);
             }else{
               String res = "{\"msg\":\"Connected to " 
