@@ -30,10 +30,9 @@ void MicroServer::setup(String hostname) {
 
   _hostname = hostname;
 
-
   WiFi.setAutoReconnect(false);
   WiFi.setAutoConnect(false);
-  WiFi.mode(WIFI_AP);
+  WiFi.mode(WIFI_AP_STA);
   delay(10);
 
   pinMode(LEDPIN,OUTPUT);
@@ -148,7 +147,6 @@ void MicroServer::run() {
               }
             }
             res = res + "]}";
-            WiFi.mode(WIFI_AP);
             send(200, res, &newClient);
           }else{
             send(200, "{\"msg\":\"No networks found\"}", &newClient);
@@ -177,7 +175,6 @@ void MicroServer::run() {
         }else if(getCharIndex(urlBuffer, "/disconnect") > -1){
 
             WiFi.disconnect();
-            WiFi.mode(WIFI_AP);
             send(200, "{\"msg\":\"Disconnected\",\"ssid\":\"" + _hostname + "\",\"ip\":\""
               + WiFi.softAPIP().toString()+"\"}", &newClient);
 
@@ -196,8 +193,10 @@ void MicroServer::run() {
         }else send(404, "{\"msg\":\"Get method not found\"}", &newClient); 
       }else if(getCharIndex(requestBuffer, "POST") > -1){
         if (getCharIndex(requestBuffer, "/connect") > -1) {
-
-          //if(WiFi.status() == WL_CONNECTED) { WiFi.disconnect(); }
+          #ifdef DEBUG_ESP_PORT
+            Serial.println(String(requestBuffer));
+          #endif
+          ESP.eraseConfig();
           
           int bodyIndex = getCharIndex(requestBuffer, "\r\n\r\n");
           int id = getCharIndex(bodyIndex, requestBuffer, "ssid");
@@ -207,9 +206,6 @@ void MicroServer::run() {
             requestBuffer[id-1] = '\0';
 
             WiFi.setOutputPower(20.5);
-            WiFi.setAutoReconnect(false);
-            WiFi.setAutoConnect(false);
-            WiFi.mode(WIFI_AP_STA);
             delay(10);
 
             if(pass > -1){
@@ -223,7 +219,6 @@ void MicroServer::run() {
             if(WiFi.status() != WL_CONNECTED) {
               send(200, "{\"msg\":\"Couldn't connect\"}", &newClient); 
               WiFi.disconnect();
-              WiFi.mode(WIFI_AP);
               WiFi.setOutputPower(0);
             }else{
               String res = "{\"msg\":\"Connected to " 
@@ -235,7 +230,6 @@ void MicroServer::run() {
             }
           }else{
             send(404, "{\"msg\":\"ssid missing!\",\"buffer\":\"" + String(requestBuffer) + "\"}", &newClient);
-            WiFi.mode(WIFI_AP);
             WiFi.setOutputPower(0);
           }
         }else send(404, "{\"msg\":\"Post method not found\"}", &newClient); 
