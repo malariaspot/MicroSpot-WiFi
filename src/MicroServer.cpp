@@ -6,6 +6,10 @@
 #define REQUESTBUFFERSIZE 1024
 #define URLBUFFERSIZE 32
 
+#ifdef DEBUG_ESP_PORT
+  long debugStamp;
+#endif
+
 Ticker ledBlink; // LED ticker and functions to make a Blink
 
 void ledFlick() { digitalWrite(LEDPIN,!digitalRead(LEDPIN)); }
@@ -16,6 +20,8 @@ char urlBuffer[URLBUFFERSIZE];
 int bufferIndex;
 
 String _hostname;
+
+bool desist;
 
 /* INIT */
 
@@ -28,10 +34,11 @@ MicroServer::MicroServer(Mechanical *m) {
 
 void MicroServer::setup(String hostname) {
 
+  desist = false;
   _hostname = hostname;
 
-  WiFi.setAutoReconnect(false);
   WiFi.setAutoConnect(false);
+  WiFi.setAutoReconnect(false);
   WiFi.mode(WIFI_AP_STA);
   delay(10);
 
@@ -47,6 +54,26 @@ void MicroServer::setup(String hostname) {
 
 void MicroServer::run() {
   WiFiClient newClient = serverWifi.available();
+
+  if(connectClient){
+    #ifdef DEBUG_ESP_PORT
+      if(millis() - debugStamp > 2000){
+        Serial.println("TRYING TO CONNECT");
+        debugStamp = millis();
+      }
+    #endif
+    if(WiFi.status() == WL_CONNECTED){
+      String res = "{\"msg\":\"Connected to " 
+      + WiFi.SSID() + " \",\"ip\":\""
+      + WiFi.localIP().toString() + "\",\"SSID\":\""
+      + WiFi.SSID() +"\"}";
+     send(200, res, &connectClient);
+    }
+    if(desist){
+      send(200, "{\"msg\":\"Desisted by User\"}", &connectClient);
+      WiFi.setOutputPower(0);
+    }
+  }
 
   if (newClient) {
 
@@ -173,7 +200,7 @@ void MicroServer::run() {
           else send(200, "{\"msg\":\"Busy\",\"status\":" + mechanical->getStatus() + "}", &newClient);
         
         }else if(getCharIndex(urlBuffer, "/disconnect") > -1){
-
+            WiFi.setAutoReconnect(false);
             WiFi.disconnect();
             send(200, "{\"msg\":\"Disconnected\",\"ssid\":\"" + _hostname + "\",\"ip\":\""
               + WiFi.softAPIP().toString()+"\"}", &newClient);
@@ -190,44 +217,46 @@ void MicroServer::run() {
           }
 
           send(200, info, &newClient);
+        }else if(getCharIndex(urlBuffer, "/desist") > -1){
+          desist = true;
+          send(200, "{\"msg\":\"Desisted\"}", &newClient);
         }else send(404, "{\"msg\":\"Get method not found\"}", &newClient); 
       }else if(getCharIndex(requestBuffer, "POST") > -1){
         if (getCharIndex(requestBuffer, "/connect") > -1) {
           #ifdef DEBUG_ESP_PORT
             Serial.println(String(requestBuffer));
+            Serial.println("END REQUEST");
           #endif
-          ESP.eraseConfig();
-          
+
+          if(connectClient) send(200, "{\"msg\":\"Desisted by connect\"}", &connectClient);
+
+
           int bodyIndex = getCharIndex(requestBuffer, "\r\n\r\n");
           int id = getCharIndex(bodyIndex, requestBuffer, "ssid");
           int pass = getCharIndex(bodyIndex, requestBuffer, "pass");
-          if (id > -1 || bodyIndex > -1) {
+          if (id > -1 && bodyIndex > -1) {
+
+            if(WiFi.status() == WL_CONNECTED) {
+              WiFi.disconnect();
+              delay(200);
+            }
+
+            connectClient = newClient;
+            desist = false;
+
+            ESP.eraseConfig();
 
             requestBuffer[id-1] = '\0';
 
             WiFi.setOutputPower(20.5);
+            WiFi.setAutoReconnect(true);
             delay(10);
 
             if(pass > -1){
               requestBuffer[pass-1] = '\0';
               WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
             }else WiFi.begin(requestBuffer+id+5);
-            
-            unsigned long startTime = millis();
-            while (WiFi.status() != WL_CONNECTED && millis() - startTime < 20000) { delay(10); }
 
-            if(WiFi.status() != WL_CONNECTED) {
-              send(200, "{\"msg\":\"Couldn't connect\"}", &newClient); 
-              WiFi.disconnect();
-              WiFi.setOutputPower(0);
-            }else{
-              String res = "{\"msg\":\"Connected to " 
-              + WiFi.SSID() + " \",\"ip\":\""
-              + WiFi.localIP().toString() + "\",\"SSID\":\""
-              + WiFi.SSID() +"\"}";
-
-             send(200, res, &newClient);
-            }
           }else{
             send(404, "{\"msg\":\"ssid missing!\",\"buffer\":\"" + String(requestBuffer) + "\"}", &newClient);
             WiFi.setOutputPower(0);

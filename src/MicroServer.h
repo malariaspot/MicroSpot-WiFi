@@ -27,6 +27,7 @@ class MicroServer {
 		Mechanical *mechanical; //Mechanical object
 		FileManager fileManager; //Config file manager
 		WiFiClient currentClient; //client for mechanical
+		WiFiClient connectClient; //client for router connection
 		int arg(const char * arg); //Checks if requested argument exists
 	
 };
