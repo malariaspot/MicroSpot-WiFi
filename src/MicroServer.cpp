@@ -10,6 +10,8 @@
 #define SOFTAP_SUBNET 0x0104A8C0 //192.168.4.1
 #define SOFTAP_MASK 0x00FFFFFF //255.255.255.0
 
+#define FIRST_CHANNEL 7
+
 #define RECONNECT_TIME 10000
 
 #ifdef DEBUG_ESP_PORT
@@ -24,7 +26,7 @@ WiFiServer serverWifi(80);
 char requestBuffer[REQUESTBUFFERSIZE];
 char urlBuffer[URLBUFFERSIZE];
 int bufferIndex;
-int guests;
+int currentChannel;
 
 String _hostname;
 
@@ -43,13 +45,14 @@ void MicroServer::setup(String hostname) {
 
   desist = false;
   _hostname = hostname;
+  currentChannel = FIRST_CHANNEL;
 
   WiFi.setAutoConnect(false);
   WiFi.setAutoReconnect(false);
   WiFi.mode(WIFI_AP_STA);
   delay(10);
 
-  WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
+  WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk, currentChannel);
   WiFi.softAPConfig(SOFTAP_IP, SOFTAP_SUBNET, SOFTAP_MASK);
 
   serverWifi.begin();
@@ -73,7 +76,7 @@ void MicroServer::run() {
         debugStamp = millis();
       }
     #endif
-    if(WiFi.status() == WL_CONNECTED && WiFi.softAPgetStationNum() > 0){
+    if(WiFi.status() == WL_CONNECTED){
       WiFi.setAutoReconnect(false);
       String res = "{\"msg\":\"Connected to " 
       + WiFi.SSID() + " \",\"ip\":\""
@@ -296,23 +299,26 @@ void MicroServer::run() {
 
             if(nextChannel == -1) send(404, "{\"msg\":\"Network not found\"}", &connectClient);
             else{
-              #ifdef DEBUG_ESP_PORT
-                Serial.println("Changing to channel: " + String(nextChannel));
-              #endif
-              WiFi.softAPdisconnect(true);
-              delay(100);
-              WiFi.softAP((const char *)_hostname.c_str(), this->ap_default_psk, nextChannel);
-              WiFi.softAPConfig(SOFTAP_IP, SOFTAP_SUBNET, SOFTAP_MASK);
-              delay(100);
-
-              long timeStamp = millis();
-              //while(WiFi.softAPgetStationNum() < 1 && millis() - timeStamp < RECONNECT_TIME){
-              while(WiFi.softAPgetStationNum() < 1){
-                delay(1000);
-              }
               
-              //if(WiFi.softAPgetStationNum() < 1) 
+              if(nextChannel != currentChannel){ 
+                #ifdef DEBUG_ESP_PORT
+                  Serial.println("Changing to channel: " + String(nextChannel));
+                #endif
+                WiFi.softAPdisconnect(true);
+                delay(100);
+                currentChannel = nextChannel;
+                WiFi.softAP((const char *)_hostname.c_str(), this->ap_default_psk, nextChannel);
+                WiFi.softAPConfig(SOFTAP_IP, SOFTAP_SUBNET, SOFTAP_MASK);
+                delay(100);
 
+                long timeStamp = millis();
+                //while(WiFi.softAPgetStationNum() < 1 && millis() - timeStamp < RECONNECT_TIME){
+                while(WiFi.softAPgetStationNum() < 1){
+                  delay(1000);
+                }
+                
+                //if(WiFi.softAPgetStationNum() < 1) 
+              }
               if(pass > -1){
                 WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
               }else WiFi.begin(requestBuffer+id+5);
