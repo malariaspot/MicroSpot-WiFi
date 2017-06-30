@@ -6,6 +6,12 @@
 #define REQUESTBUFFERSIZE 1024
 #define URLBUFFERSIZE 32
 
+#define SOFTAP_IP 0x0104A8C0 //192.168.4.1
+#define SOFTAP_SUBNET 0x0104A8C0 //192.168.4.1
+#define SOFTAP_MASK 0x00FFFFFF //255.255.255.0
+
+#define RECONNECT_TIME 10000
+
 #ifdef DEBUG_ESP_PORT
   long debugStamp;
 #endif
@@ -18,6 +24,7 @@ WiFiServer serverWifi(80);
 char requestBuffer[REQUESTBUFFERSIZE];
 char urlBuffer[URLBUFFERSIZE];
 int bufferIndex;
+int guests;
 
 String _hostname;
 
@@ -42,17 +49,21 @@ void MicroServer::setup(String hostname) {
   WiFi.mode(WIFI_AP_STA);
   delay(10);
 
+  WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
+  WiFi.softAPConfig(SOFTAP_IP, SOFTAP_SUBNET, SOFTAP_MASK);
+
+  serverWifi.begin();
+  
   pinMode(LEDPIN,OUTPUT);
   digitalWrite(LEDPIN,LOW);
   delay(100);
   ledBlink.attach(1,ledFlick);
-
-  WiFi.softAP((const char *)hostname.c_str(), this->ap_default_psk);
-
-  serverWifi.begin();
 }
 
 void MicroServer::run() {
+  bufferIndex = 0;
+  memset(requestBuffer, 0, sizeof requestBuffer);
+  memset(urlBuffer, 0, sizeof urlBuffer);
   WiFiClient newClient = serverWifi.available();
 
   if(connectClient){
@@ -62,7 +73,8 @@ void MicroServer::run() {
         debugStamp = millis();
       }
     #endif
-    if(WiFi.status() == WL_CONNECTED){
+    if(WiFi.status() == WL_CONNECTED && WiFi.softAPgetStationNum() > 0){
+      WiFi.setAutoReconnect(false);
       String res = "{\"msg\":\"Connected to " 
       + WiFi.SSID() + " \",\"ip\":\""
       + WiFi.localIP().toString() + "\",\"SSID\":\""
@@ -70,6 +82,7 @@ void MicroServer::run() {
      send(200, res, &connectClient);
     }
     if(desist){
+      WiFi.setAutoReconnect(false);
       send(200, "{\"msg\":\"Desisted by User\"}", &connectClient);
       WiFi.setOutputPower(0);
     }
@@ -93,7 +106,7 @@ void MicroServer::run() {
       send(200, "Please connect from the App", &newClient);
     }else{
 
-      newClient.flush();
+      //newClient.flush();
 
       if(getCharIndex(requestBuffer, "GET") > -1){
 
@@ -234,12 +247,16 @@ void MicroServer::run() {
           int bodyIndex = getCharIndex(requestBuffer, "\r\n\r\n");
           int id = getCharIndex(bodyIndex, requestBuffer, "ssid");
           int pass = getCharIndex(bodyIndex, requestBuffer, "pass");
-          if (id > -1 && bodyIndex > -1) {
 
-            if(WiFi.status() == WL_CONNECTED) {
-              WiFi.disconnect();
-              delay(200);
+          //Make another try at rescueing the html body.
+          if(id > -1){
+            while(newClient.available()) {
+              requestBuffer[bufferIndex] =  newClient.read();
+              bufferIndex++;
             }
+          }
+          
+          if (id > -1 && bodyIndex > -1) {
 
             connectClient = newClient;
             desist = false;
@@ -247,16 +264,59 @@ void MicroServer::run() {
             ESP.eraseConfig();
 
             requestBuffer[id-1] = '\0';
+            if(pass > -1) requestBuffer[pass-1] = '\0';
 
             WiFi.setOutputPower(20.5);
             WiFi.setAutoReconnect(true);
             delay(10);
 
-            if(pass > -1){
-              requestBuffer[pass-1] = '\0';
-              WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
-            }else WiFi.begin(requestBuffer+id+5);
 
+            //Change the softAP to the new channel to avoid channel 
+            //switching errors
+            WiFi.scanNetworks();
+            int nextChannel = -1;
+
+            #ifdef DEBUG_ESP_PORT
+              Serial.println(WiFi.SSID(0) + "WIFI");
+            #endif
+
+            for(int i = 0; WiFi.SSID(i) != "" && nextChannel == -1; i++)
+            {
+                #ifdef DEBUG_ESP_PORT
+                  Serial.printf("TRIED %d\r\n",i);
+                  Serial.println(WiFi.SSID(i+1));
+                #endif
+              if(WiFi.SSID(i) == String(requestBuffer + id + 5)){
+                #ifdef DEBUG_ESP_PORT
+                  Serial.println("GOT IT");
+                #endif
+                nextChannel = WiFi.channel(i);
+              }
+            }
+
+            if(nextChannel == -1) send(404, "{\"msg\":\"Network not found\"}", &connectClient);
+            else{
+              #ifdef DEBUG_ESP_PORT
+                Serial.println("Changing to channel: " + String(nextChannel));
+              #endif
+              WiFi.softAPdisconnect(true);
+              delay(100);
+              WiFi.softAP((const char *)_hostname.c_str(), this->ap_default_psk, nextChannel);
+              WiFi.softAPConfig(SOFTAP_IP, SOFTAP_SUBNET, SOFTAP_MASK);
+              delay(100);
+
+              long timeStamp = millis();
+              //while(WiFi.softAPgetStationNum() < 1 && millis() - timeStamp < RECONNECT_TIME){
+              while(WiFi.softAPgetStationNum() < 1){
+                delay(1000);
+              }
+              
+              //if(WiFi.softAPgetStationNum() < 1) 
+
+              if(pass > -1){
+                WiFi.begin(requestBuffer+id+5, requestBuffer+pass+5);
+              }else WiFi.begin(requestBuffer+id+5);
+            }
           }else{
             send(404, "{\"msg\":\"ssid missing!\",\"buffer\":\"" + String(requestBuffer) + "\"}", &newClient);
             WiFi.setOutputPower(0);
@@ -267,9 +327,7 @@ void MicroServer::run() {
       }
     }
   }
-  bufferIndex = 0;
-  memset(requestBuffer, 0, sizeof requestBuffer);
-  memset(urlBuffer, 0, sizeof urlBuffer);
+
 }
 
 void MicroServer::send(int code, String msg, WiFiClient * client) { 
