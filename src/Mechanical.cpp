@@ -258,7 +258,7 @@ Mechanical::Mechanical(int baud) {
 bool Mechanical::toggle(bool button) {
   answered = false;
   if(button) {
-    digitalWrite(ENABLEPIN,LOW);
+    //digitalWrite(ENABLEPIN,LOW);
     delay(TICK); //delay cautelar time before starting the communication.
     Serial.begin(this->baudios);
     timeStamp = millis();
