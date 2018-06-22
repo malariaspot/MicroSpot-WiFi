@@ -2,7 +2,7 @@
 #include "Mechanical.h"
 #include <Ticker.h>
 
-#define LEDPIN 14 //GPIO for the LED
+#define LEDPIN 5 //GPIO for the LED
 #define REQUESTBUFFERSIZE 1024
 #define URLBUFFERSIZE 32
 
