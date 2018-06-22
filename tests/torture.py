@@ -58,7 +58,7 @@ testCommand("/toggle?o=1")
 time.sleep(3.0)
 
 # Check ping command
-testCommand("/ayy/lmao")
+# testCommand("/ayy/lmao")
 
 # Check home command
 testCommand("/home")
