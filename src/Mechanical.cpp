@@ -13,7 +13,6 @@
 // Internal variables
 /////////////////////////////////////////
 
-#define ENABLEPIN 4
 #define ENDLINE '\n'
 #define BUFFERSIZE 512
 #define REQSIZE 512
@@ -241,7 +240,6 @@ Mechanical::Mechanical(int baud) {
   pos.y = "";
   afterPos.x = "";
   afterPos.y = "";
-  pinMode(ENABLEPIN,OUTPUT);
   expected = 0;
   bufIndex = 0;
   lastIndex = 0;
@@ -258,7 +256,6 @@ Mechanical::Mechanical(int baud) {
 bool Mechanical::toggle(bool button) {
   answered = false;
   if(button) {
-    //digitalWrite(ENABLEPIN,LOW);
     delay(TICK); //delay cautelar time before starting the communication.
     Serial.begin(this->baudios);
     timeStamp = millis();
@@ -275,7 +272,6 @@ bool Mechanical::toggle(bool button) {
     return true;
   }else{
     Serial.end();
-    digitalWrite(ENABLEPIN,HIGH);
     setStatus(OFF);
     return false;
   }
