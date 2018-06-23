@@ -311,7 +311,7 @@ void MicroServer::run() {
                 WiFi.softAPConfig(SOFTAP_IP, SOFTAP_SUBNET, SOFTAP_MASK);
                 delay(100);
 
-                long timeStamp = millis();
+                //long timeStamp = millis();
                 //while(WiFi.softAPgetStationNum() < 1 && millis() - timeStamp < RECONNECT_TIME){
                 while(WiFi.softAPgetStationNum() < 1){
                   delay(1000);

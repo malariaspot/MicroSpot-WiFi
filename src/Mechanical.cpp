@@ -526,6 +526,7 @@ bool Mechanical::toggleLight(char * request, int l){
 
 bool Mechanical::reset(){
   Serial.println("\x18");
+  return true;
 }
 
 ////////////////////
