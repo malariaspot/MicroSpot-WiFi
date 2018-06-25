@@ -47,6 +47,7 @@ void MicroServer::setup(String hostname) {
   _hostname = hostname;
   currentChannel = FIRST_CHANNEL;
 
+  WiFi.setOutputPower(10);
   WiFi.setAutoConnect(false);
   WiFi.setAutoReconnect(false);
   WiFi.mode(WIFI_AP_STA);
